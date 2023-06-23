@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Launch",
-            "type": "chrome",
+            "type": "<%= browserType %>",
             "request": "launch",
             "url": "https://turbowarp.org/editor?extension=http://localhost:<%= devPort %>/extension.js"
         }

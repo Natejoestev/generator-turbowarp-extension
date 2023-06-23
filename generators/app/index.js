@@ -67,6 +67,15 @@ module.exports = class extends Generator {
             ]);
             this.httpServerType = serverType;
         }
+        if (this.vscodeInit['browser']) {
+            const {browserType} = await this.prompt([
+                { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
+                    { name: 'Chrome', value: 'chrome' },
+                    { name: 'Edge', value: 'msedge' }
+                ] }
+            ]);
+            this.browserType = browserType;
+        }
         if (this.vscodeInit['httpserver'] || this.vscodeInit['browser']) {
             const {devPort} = await this.prompt([
                 { name: 'devPort' , message: 'Dev Http port:', default: '5010' }
@@ -101,7 +110,7 @@ module.exports = class extends Generator {
             this.fs.copyTpl(
                 this.templatePath('vscode', 'browser-launch.json'),
                 this.destinationPath(this.extName, '.vscode', 'launch.json'),
-                { devPort: this.devPort }
+                { devPort: this.devPort, browserType:this.browserType }
             );
         }
         if (this.language == 'js') {
@@ -132,7 +141,11 @@ module.exports = class extends Generator {
     }
     
     end() {
-        this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
-        this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
+        if (this.language == 'ts') {
+            if (this.pkgManager == 'npm') {
+                this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
+                this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
+            }
+        }
     }
 };
