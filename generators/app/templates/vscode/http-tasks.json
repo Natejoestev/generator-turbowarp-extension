@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Dev http server",
+            "type": "shell",
+            "command": "python -m <%= devPort %>",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "runOptions": { "runOn": "folderOpen" }
+        }
+    ]
+}

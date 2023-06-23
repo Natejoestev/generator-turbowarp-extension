@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://turbowarp.org/editor?extension=http://localhost:<%= devPort %>/extension.js"
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Typescript compiler watch",
+            "type": "shell",
+            "command": "npx tsc --watch",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "runOptions": { "runOn": "folderOpen" }
+        }
+    ]
+}
