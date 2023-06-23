@@ -76,7 +76,6 @@ module.exports = class extends Generator {
     }
 
     writing() {
-        //TODO maybe have tsc and httpserver tasks both add themselves into the array of tasks then write to tasks.json (http- and tsc- *tasks.json would be just the task itself)
         if (this.vscodeInit['httpserver'] || this.vscodeInit['tsc']) {
             const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
             if (this.vscodeInit['httpserver']) {
