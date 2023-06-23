@@ -55,8 +55,19 @@ module.exports = class extends Generator {
         const {vscodeInit} = await this.prompt([
             { name: 'vscodeInit' , message: 'Initialize vscode dev env?', type:'checkbox', choices: vscodeChoices }
         ]);
-        this.vscodeInit = vscodeInit;
-        if (vscodeInit.includes('httpserver') || vscodeInit.includes('browser')) {
+        //this converts [k...] to {k:true...}
+        this.vscodeInit = Object.fromEntries(vscodeInit.map(k => [k,true]));
+        if (this.vscodeInit['httpserver']) {
+            const {serverType} = await this.prompt([
+                { name: 'serverType', message: 'What http server to use?', type:'list', choices: [
+                    { name: 'Python http.server', value: 'py' },
+                    //TODO add better httpserver instead of python
+                    // https://github.com/TurboWarp/extensions/blob/master/development/server.js
+                ]}
+            ]);
+            this.httpServerType = serverType;
+        }
+        if (this.vscodeInit['httpserver'] || this.vscodeInit['browser']) {
             const {devPort} = await this.prompt([
                 { name: 'devPort' , message: 'Dev Http port:', default: '5010' }
             ]);
@@ -66,34 +77,33 @@ module.exports = class extends Generator {
 
     writing() {
         //TODO maybe have tsc and httpserver tasks both add themselves into the array of tasks then write to tasks.json (http- and tsc- *tasks.json would be just the task itself)
-        const vscodeTasksPath = this.destinationPath(this.extName, '.vscode', 'tasks.json');
-        if (this.vscodeInit.includes('httpserver')) {
-            //TODO use better httpserver instead of python
-            this.fs.copyTpl(
-                this.templatePath('vscode', 'http-tasks.json'),
-                vscodeTasksPath,
-                { devPort: this.devPort }
+        if (this.vscodeInit['httpserver'] || this.vscodeInit['tsc']) {
+            const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
+            if (this.vscodeInit['httpserver']) {
+                if (this.httpServerType == 'py') {
+                    content.tasks.push(
+                        JSON.parse(this.fs.read(
+                            this.templatePath('vscode', 'http-python-task.json')
+                        ).replaceAll('<%= devPort %>', this.devPort))
+                    );
+                }
+            }
+            if (this.vscodeInit['tsc']) {
+                content.tasks.push(
+                    this.fs.readJSON(this.templatePath('vscode', 'tsc-task.json'))
+                );
+            }
+            this.fs.writeJSON(
+                this.destinationPath(this.extName, '.vscode', 'tasks.json'),
+                content
             );
         }
-        if (this.vscodeInit.includes('browser')) {
+        if (this.vscodeInit['browser']) {
             this.fs.copyTpl(
                 this.templatePath('vscode', 'browser-launch.json'),
                 this.destinationPath(this.extName, '.vscode', 'launch.json'),
                 { devPort: this.devPort }
             );
-        }
-        if (this.vscodeInit.includes('tsc')) {
-            if (this.vscodeInit.includes('httpserver')) {
-                const content = this.fs.readJSON(vscodeTasksPath);
-                content.tasks.push(this.fs.readJSON(this.templatePath('vscode', 'tsc-tasks.json')).tasks[0])
-                this.fs.writeJSON(vscodeTasksPath, content, undefined, '    ');
-            } else {
-                this.fs.copyTpl(
-                    this.templatePath('vscode', 'tsc-tasks.json'),
-                    vscodeTasksPath,
-                    { devPort: this.devPort }
-                );
-            }
         }
         if (this.language == 'js') {
             this.fs.copyTpl(
@@ -118,9 +128,12 @@ module.exports = class extends Generator {
                     this.destinationPath(this.extName, 'package.json'),
                     { extName: this.extName }
                 );
-                this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
-                this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
             }
         }
+    }
+    
+    end() {
+        this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
+        this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
     }
 };

@@ -1,0 +1,10 @@
+{
+    "label": "Dev http server",
+    "type": "shell",
+    "command": "python -m http.server <%= devPort %>",
+    "presentation": {
+        "reveal": "always",
+        "panel": "new"
+    },
+    "runOptions": { "runOn": "folderOpen" }
+}
