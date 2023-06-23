@@ -5,6 +5,7 @@
         
         /* Modules */
         "module": "AMD", /* Specify what module code is generated. */
+        "baseUrl": "./src",
         "paths": {
             "scratch-vm": ["./node_modules/@turbowarp/types/index.d.ts"],
             "scratch-render": ["./node_modules/@turbowarp/types/index.d.ts"],
