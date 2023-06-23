@@ -119,8 +119,7 @@ module.exports = class extends Generator {
                     { extName: this.extName }
                 );
                 this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
-                this.spawnCommand('npm', ['install', 'typescript', '-y', '--quiet']);
-                //TODO add types (@turbowarp/types) on npm
+                this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
             }
         }
     }
