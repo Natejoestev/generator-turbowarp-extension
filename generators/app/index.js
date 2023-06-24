@@ -42,9 +42,9 @@ module.exports = class extends Generator {
         }
 
         const vscodeChoices = [
-            { name: 'Launch dev browser', value: 'browser'},
-            { name: 'Run dev HTTP server on startup', value: 'httpserver'}
-            //TODO add 'hide unneeded files' option (settings.json:explorer.exclude) use array
+            { name: 'Launch dev browser', value: 'browser' },
+            { name: 'Run dev HTTP server on startup', value: 'httpserver' }
+            //NOTE maybe add 'hide unnecessary files' option (settings.json:explorer.exclude)
         ];
         if (language == 'ts') vscodeChoices.push({ name: 'Run typescript compiler on startup', value: 'tsc' });
         const {vscodeInit} = await this.prompt([
@@ -52,15 +52,6 @@ module.exports = class extends Generator {
         ]);
         //this converts [k...] to {k:true...}
         this.vscodeInit = Object.fromEntries(vscodeInit.map(k => [k,true]));
-        if (this.vscodeInit['httpserver']) {
-            const {serverType} = await this.prompt([
-                { name: 'serverType', message: 'What http server to use?', type:'list', choices: [
-                    { name: 'Python http.server', value: 'py' },
-                    { name: 'Node express server', value: 'express' }
-                ]}
-            ]);
-            this.httpServerType = serverType;
-        }
         if (this.vscodeInit['browser']) {
             const {browserType} = await this.prompt([
                 { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
@@ -69,6 +60,15 @@ module.exports = class extends Generator {
                 ] }
             ]);
             this.browserType = browserType;
+        }
+        if (this.vscodeInit['httpserver']) {
+            const {serverType} = await this.prompt([
+                { name: 'serverType', message: 'What http server to use?', type:'list', choices: [
+                    { name: 'Python http.server', value: 'py' },
+                    { name: 'Node express server', value: 'express' }
+                ]}
+            ]);
+            this.httpServerType = serverType;
         }
         if (this.vscodeInit['httpserver'] || this.vscodeInit['browser']) {
             const {devPort} = await this.prompt([
