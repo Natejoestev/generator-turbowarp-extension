@@ -1,7 +1,7 @@
 {
-    "label": "Http server (python)",
+    "label": "Http server (express)",
     "type": "shell",
-    "command": "python -m http.server <%= devPort %>",
+    "command": "node ./server.js",
     "presentation": {
         "reveal": "always",
         "panel": "new"
