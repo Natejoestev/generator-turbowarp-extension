@@ -1,5 +1,5 @@
 
-class <%= extName %> {
+class <%= className %> {
   getInfo() {
     return {
       id: '<%= extId %>',
@@ -19,4 +19,4 @@ class <%= extName %> {
   }
 }
 
-Scratch.extensions.register(new <%= extName %>());
+Scratch.extensions.register(new <%= className %>());
