@@ -26,6 +26,15 @@ module.exports = class extends Generator {
             } }
         ] );
         this.extId = extId;
+        const {newFolder} = await this.prompt([
+            // { name: 'newFolder', message: `Create in new Folder? (${extName})`, type:'confirm', default:true }
+            { name: 'newFolder', message: `Create in new folder?`, type:'expand', choices: [
+                { key: 'y', name: `Create a new folder (${extName}).`, value: true, short: 'Yes' },
+                { key: 'n', name: 'Populate current folder', value: false, short: 'No' }
+            ]}
+            //TODO set default value
+        ]);
+        this.newFolder = newFolder;
 
         const {language} = await this.prompt([
             { name: 'language', type: 'list', choices: [
@@ -48,11 +57,13 @@ module.exports = class extends Generator {
         ];
         if (language == 'ts') vscodeChoices.push({ name: 'Run typescript compiler on startup', value: 'tsc' });
         const {vscodeInit} = await this.prompt([
-            { name: 'vscodeInit' , message: 'Initialize vscode dev env?', type:'checkbox', choices: vscodeChoices }
+            { name: 'vscodeInit' , message: 'Initialize vscode dev env?', type:'checkbox', choices: vscodeChoices,
+            filter(ans) {
+                return Object.fromEntries(ans.map(k => [k,true]))
+            } }
         ]);
-        //this converts [k...] to {k:true...}
-        this.vscodeInit = Object.fromEntries(vscodeInit.map(k => [k,true]));
-        if (this.vscodeInit['browser']) {
+        this.vscodeInit = vscodeInit;
+        if (vscodeInit['browser']) {
             const {browserType} = await this.prompt([
                 { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
                     { name: 'Chrome', value: 'chrome' },
@@ -61,7 +72,7 @@ module.exports = class extends Generator {
             ]);
             this.browserType = browserType;
         }
-        if (this.vscodeInit['httpserver']) {
+        if (vscodeInit['httpserver']) {
             const {serverType} = await this.prompt([
                 { name: 'serverType', message: 'What http server to use?', type:'list', choices: [
                     { name: 'Python http.server', value: 'py' },
@@ -70,14 +81,14 @@ module.exports = class extends Generator {
             ]);
             this.httpServerType = serverType;
         }
-        if (this.vscodeInit['httpserver'] || this.vscodeInit['browser']) {
+        if (vscodeInit['httpserver'] || vscodeInit['browser']) {
             const {devPort} = await this.prompt([
                 { name: 'devPort' , message: 'Dev Http port:', default: '5010' }
             ]);
             this.devPort = devPort;
         }
 
-        this.usesPkgManager = language == 'ts' || (this.vscodeInit['httpserver'] && this.httpServerType=='express');
+        this.usesPkgManager = language == 'ts' || (vscodeInit['httpserver'] && this.httpServerType=='express');
 
         if (this.usesPkgManager) {
             const {pkgManager} = await this.prompt([
@@ -86,6 +97,12 @@ module.exports = class extends Generator {
                 ]}
             ]);
             this.pkgManager = pkgManager;
+        }
+    }
+
+    configuring () {
+        if (this.newFolder) {
+            this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
         }
     }
 
@@ -105,7 +122,7 @@ module.exports = class extends Generator {
                     ));
                     this.fs.copyTpl(
                         this.templatePath('server.js'),
-                        this.destinationPath(this.extName, 'server.js'),
+                        this.destinationPath('server.js'),
                         { devPort: this.devPort }
                     );
                 }
@@ -116,14 +133,14 @@ module.exports = class extends Generator {
                 );
             }
             this.fs.writeJSON(
-                this.destinationPath(this.extName, '.vscode', 'tasks.json'),
+                this.destinationPath('.vscode', 'tasks.json'),
                 content
             );
         }
         if (this.vscodeInit['browser']) {
             this.fs.copyTpl(
                 this.templatePath('vscode', 'browser-launch.json'),
-                this.destinationPath(this.extName, '.vscode', 'launch.json'),
+                this.destinationPath('.vscode', 'launch.json'),
                 { devPort: this.devPort, browserType:this.browserType }
             );
         }
@@ -131,7 +148,7 @@ module.exports = class extends Generator {
             if (this.pkgManager == 'npm') {
                 this.fs.copyTpl(
                     this.templatePath('package.json'),
-                    this.destinationPath(this.extName, 'package.json'),
+                    this.destinationPath('package.json'),
                     { extName: this.extName }
                 );
             }
@@ -139,27 +156,26 @@ module.exports = class extends Generator {
         if (this.language == 'js') {
             this.fs.copyTpl(
                 this.templatePath('js', 'extension.js'),
-                this.destinationPath(this.extName, 'extension.js'),
+                this.destinationPath('extension.js'),
                 { extName: this.extName, extId: this.extId }
             );
         } else if (this.language == 'ts') {
             if (this.pkgManager == 'npm') {
                 this.fs.copyTpl(
                     this.templatePath('ts', 'tsconfig.json'),
-                    this.destinationPath(this.extName, 'tsconfig.json'),
+                    this.destinationPath('tsconfig.json'),
                     { srcPath: this.srcPath }
                 );
                 this.fs.copyTpl(
                     this.templatePath('ts', 'main.ts'),
-                    this.destinationPath(this.extName, this.srcPath, 'main.ts'),
+                    this.destinationPath(this.srcPath, 'main.ts'),
                     { extName: this.extName, extId: this.extId }
                 );
             }
         }
     }
-    //TODO add (create in folder, or new folder) option
-    end() {
-        this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
+
+    install() {
         if (this.language == 'ts') {
             if (this.pkgManager == 'npm') {
                 this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
