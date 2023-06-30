@@ -52,6 +52,7 @@ module.exports = class extends Generator {
             this.srcPath = srcPath;
         }
 
+        //NOTE maybe have support for other editors
         const vscodeChoices = [
             { name: 'Launch dev browser', value: 'browser' },
             { name: 'Run dev HTTP server on startup', value: 'httpserver' }
@@ -188,6 +189,15 @@ module.exports = class extends Generator {
             if (this.pkgManager=='npm') {
                 this.spawnCommand('npm', ['install', 'express', '-y', '--quiet']);
             }
+        }
+    }
+
+    async end() {
+        const {openCode} = await this.prompt([
+            { name:'openCode', message: 'Open in VSCode', type:'confirm', default:true }
+        ]);
+        if (openCode) {
+            this.spawnCommand('code', [this.destinationPath()]);
         }
     }
 };
