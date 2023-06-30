@@ -1,5 +1,6 @@
 const Generator = require('yeoman-generator');
 const path = require('path');
+const chalk = require('chalk');
 
 function camelCase(str) {
     // https://stackoverflow.com/a/2970667
@@ -10,11 +11,9 @@ function camelCase(str) {
 }
 
 module.exports = class extends Generator {
-    constructor(args, opts) {
-        super(args, opts);
-        this.description = 'Generator for Turbowarp extensions.';
-    }
     initializing() {
+        const turbowarp = chalk.hex('#ff4c4c');
+        this.log('Welcome, to the '+turbowarp.bold('TurboWarp Extension')+' Generator.');
     }
 
     async prompting() {
