@@ -12,14 +12,13 @@ function camelCase(str) {
 
 module.exports = class extends Generator {
     initializing() {
-        const turbowarp = chalk.hex('#ff4c4c');
-        this.log('Welcome, to the '+turbowarp.bold('TurboWarp Extension')+' Generator.');
+        const turbowarp = chalk.bold.hex('#ff4c4c');
+        this.log('Welcome, to the '+turbowarp('TurboWarp Extension')+' Generator.');
     }
 
     async prompting() {
-        const usePkgManager = ({lang, vscodeInit, serverType}) => {
-            return lang == 'ts' ||
-                (vscodeInit['httpserver'] && serverType=='express');
+        const usePkgManager = ({lang, serverType}) => {
+            return lang == 'ts' || serverType=='express';
         };
         const ops = await this.prompt([
             { name: 'extName', message: 'Extension name:', default:this.appname },
@@ -45,13 +44,12 @@ module.exports = class extends Generator {
             when: ({lang}) => lang == 'ts'
             },
 
-            //NOTE maybe have support for other editors
+            //TODO maybe have support for other editors
             { name: 'vscodeInit' , message: 'Initialize vscode dev env?', type:'checkbox',
             choices({lang}) {
                 return [
                     { name: 'Launch dev browser', value: 'browser' },
                     { name: 'Run dev HTTP server on startup', value: 'httpserver' }
-                    //NOTE maybe add 'hide unnecessary files' option (settings.json:explorer.exclude)
                 ].concat(lang!='ts' ? []:
                     { name: 'Run typescript compiler on startup', value: 'tsc' }
                 );
@@ -163,7 +161,7 @@ module.exports = class extends Generator {
         if (this.ops.lang == 'ts') {
             packages.push('typescript', '@turbowarp/types');
         }
-        if (this.ops.vscodeInit['httpserver'] && this.ops.serverType == 'express') {
+        if (this.ops.serverType == 'express') {
             packages.push('express');
         }
         if (this.usesPkgManager) {
