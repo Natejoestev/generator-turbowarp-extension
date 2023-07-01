@@ -161,14 +161,17 @@ module.exports = class extends Generator {
     }
 
     install() {
+        const packages = [];
         if (this.ops.lang == 'ts') {
-            if (this.pkgManager == 'npm') {
-                this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
-            }
+            packages.push('typescript', '@turbowarp/types');
         }
         if (this.ops.vscodeInit['httpserver'] && this.ops.serverType == 'express') {
+            packages.push('express');
+        }
+        if (this.usesPkgManager) {
             if (this.ops.pkgManager=='npm') {
-                this.spawnCommand('npm', ['install', 'express', '-y', '--quiet']);
+                this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet']);
+                //TODO maybe have dev dependencies instead of dependencies (all of them rn, are used for development)
             }
         }
     }
