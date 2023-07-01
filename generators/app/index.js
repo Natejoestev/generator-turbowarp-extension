@@ -17,16 +17,11 @@ module.exports = class extends Generator {
     }
 
     async prompting() {
-        const usePkgManager = ({language, vscodeInit, serverType}) => {
-            return language == 'ts' ||
+        const usePkgManager = ({lang, vscodeInit, serverType}) => {
+            return lang == 'ts' ||
                 (vscodeInit['httpserver'] && serverType=='express');
         };
-        const {
-            extName,extId, newFolder,
-            language,srcPath,
-            vscodeInit,browserType,serverType,devPort,
-            pkgManager
-        } = await this.prompt([
+        const ops = await this.prompt([
             { name: 'extName', message: 'Extension name:', default:this.appname },
             { name: 'extId', message: 'Extension Id:',
             default: ({extName}) => extName.toLowerCase().match(/[a-z0-9]/g).join(''),
@@ -42,22 +37,22 @@ module.exports = class extends Generator {
                     { key: 'n', name: 'Populate current folder', value: false, short: 'No' }
             ], default: 0 },
 
-            { name: 'language', type: 'list', choices: [
+            { name: 'lang', type: 'list', choices: [
                 { name: 'javascript', value: 'js' },
                 { name: 'typescript (node project compiled to js)', value: 'ts' }   
             ] },
             { name: 'srcPath', message: 'What path to src files?', default:'src',
-            when: ({language}) => language == 'ts'
+            when: ({lang}) => lang == 'ts'
             },
 
             //NOTE maybe have support for other editors
             { name: 'vscodeInit' , message: 'Initialize vscode dev env?', type:'checkbox',
-            choices({language}) {
+            choices({lang}) {
                 return [
                     { name: 'Launch dev browser', value: 'browser' },
                     { name: 'Run dev HTTP server on startup', value: 'httpserver' }
                     //NOTE maybe add 'hide unnecessary files' option (settings.json:explorer.exclude)
-                ].concat(language!='ts' ? []:
+                ].concat(lang!='ts' ? []:
                     { name: 'Run typescript compiler on startup', value: 'tsc' }
                 );
             },
@@ -83,49 +78,40 @@ module.exports = class extends Generator {
                 'npm'
             ], when: usePkgManager }
         ]);
-        this.extName = extName;
-        this.extId = extId;
-        this.newFolder = newFolder;
-        this.language = language;
-        this.srcPath = srcPath;
-        this.vscodeInit = vscodeInit;
-        this.browserType = browserType;
-        this.serverType = serverType;
-        this.devPort = devPort;
-        this.pkgManager = pkgManager;
+        this.ops = ops;
 
-        //REMAKE somehow pass whole "answer hash"
-        this.usesPkgManager = usePkgManager({language, vscodeInit, serverType});
+        //TODO init git repo (.git) folder
+        this.usesPkgManager = usePkgManager(ops);
     }
 
     configuring () {
-        if (this.newFolder) {
-            this.destinationRoot(path.resolve(this.destinationPath(), this.extName));
+        if (this.ops.newFolder) {
+            this.destinationRoot(path.resolve(this.destinationPath(), this.ops.extName));
         }
     }
 
     writing() {
-        if (this.vscodeInit['httpserver'] || this.vscodeInit['tsc']) {
+        if (this.ops.vscodeInit['httpserver'] || this.ops.vscodeInit['tsc']) {
             const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
-            if (this.vscodeInit['httpserver']) {
-                if (this.serverType == 'py') {
+            if (this.ops.vscodeInit['httpserver']) {
+                if (this.ops.serverType == 'py') {
                     content.tasks.push(
                         JSON.parse(this.fs.read(
                             this.templatePath('vscode', 'http-python-task.json')
-                        ).replaceAll('<%= devPort %>', this.devPort))
+                        ).replaceAll('<%= devPort %>', this.ops.devPort))
                     );
-                } else if (this.serverType == 'express') {
+                } else if (this.ops.serverType == 'express') {
                     content.tasks.push(this.fs.readJSON(
                         this.templatePath('vscode', 'http-express-task.json')
                     ));
                     this.fs.copyTpl(
                         this.templatePath('server.js'),
                         this.destinationPath('server.js'),
-                        { devPort: this.devPort }
+                        this.ops
                     );
                 }
             }
-            if (this.vscodeInit['tsc']) {
+            if (this.ops.vscodeInit['tsc']) {
                 content.tasks.push(
                     this.fs.readJSON(this.templatePath('vscode', 'tsc-task.json'))
                 );
@@ -135,60 +121,61 @@ module.exports = class extends Generator {
                 content
             );
         }
-        if (this.vscodeInit['browser']) {
+        if (this.ops.vscodeInit['browser']) {
             this.fs.copyTpl(
                 this.templatePath('vscode', 'browser-launch.json'),
                 this.destinationPath('.vscode', 'launch.json'),
-                { devPort: this.devPort, browserType:this.browserType }
+                this.ops
             );
         }
         if (this.usesPkgManager) {
-            if (this.pkgManager == 'npm') {
+            if (this.ops.pkgManager == 'npm') {
                 this.fs.copyTpl(
                     this.templatePath('package.json'),
                     this.destinationPath('package.json'),
-                    { extName: this.extName } //ERROR extname can contain spaces, maybe just replace with -'s
+                    this.ops //ERROR extname can contain spaces, maybe just replace with -'s
                 );
             }
         }
-        const className = camelCase(this.extName);
-        if (this.language == 'js') {
+        const className = camelCase(this.ops.extName);
+        if (this.ops.lang == 'js') {
             this.fs.copyTpl(
                 this.templatePath('js', 'extension.js'),
                 this.destinationPath('extension.js'),
-                { className, extName:this.extName, extId: this.extId }
+                Object.assign({className}, this.ops)
             );
-        } else if (this.language == 'ts') {
-            if (this.pkgManager == 'npm') {
+        } else if (this.ops.lang == 'ts') {
+            if (this.ops.pkgManager == 'npm') {
                 this.fs.copyTpl(
                     this.templatePath('ts', 'tsconfig.json'),
                     this.destinationPath('tsconfig.json'),
-                    { srcPath: this.srcPath }
+                    this.ops
                 );
                 this.fs.copyTpl(
                     this.templatePath('ts', 'main.ts'),
-                    this.destinationPath(this.srcPath, 'main.ts'),
-                    { className, extName:this.extName, extId: this.extId }
+                    this.destinationPath(this.ops.srcPath, 'main.ts'),
+                    Object.assign({className}, this.ops)
                 );
             }
         }
     }
 
     install() {
-        if (this.language == 'ts') {
+        if (this.ops.lang == 'ts') {
             if (this.pkgManager == 'npm') {
                 this.spawnCommand('npm', ['install', 'typescript', '@turbowarp/types', '-y', '--quiet']);
             }
         }
-        if (this.vscodeInit['httpserver'] && this.serverType == 'express') {
-            if (this.pkgManager=='npm') {
+        if (this.ops.vscodeInit['httpserver'] && this.ops.serverType == 'express') {
+            if (this.ops.pkgManager=='npm') {
                 this.spawnCommand('npm', ['install', 'express', '-y', '--quiet']);
             }
         }
     }
 
-    async end() {
-        const {openCode} = await this.prompt([
+    end() {
+        //BUG this prompt get's interrupted by npm install commands
+        const {openCode} = this.prompt([
             { name:'openCode', message: 'Open in VSCode', type:'confirm', default:true }
         ]);
         if (openCode) {
