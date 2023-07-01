@@ -145,18 +145,16 @@ module.exports = class extends Generator {
                 Object.assign({className}, this.ops)
             );
         } else if (this.ops.lang == 'ts') {
-            if (this.ops.pkgManager == 'npm') {
-                this.fs.copyTpl(
-                    this.templatePath('ts', 'tsconfig.json'),
-                    this.destinationPath('tsconfig.json'),
-                    this.ops
-                );
-                this.fs.copyTpl(
-                    this.templatePath('ts', 'main.ts'),
-                    this.destinationPath(this.ops.srcPath, 'main.ts'),
-                    Object.assign({className}, this.ops)
-                );
-            }
+            this.fs.copyTpl(
+                this.templatePath('ts', 'tsconfig.json'),
+                this.destinationPath('tsconfig.json'),
+                this.ops
+            );
+            this.fs.copyTpl(
+                this.templatePath('ts', 'main.ts'),
+                this.destinationPath(this.ops.srcPath, 'main.ts'),
+                Object.assign({className}, this.ops)
+            );
         }
     }
 
