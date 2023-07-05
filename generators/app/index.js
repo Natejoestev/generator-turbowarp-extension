@@ -36,6 +36,8 @@ module.exports = class extends Generator {
                     { key: 'n', name: 'Populate current folder', value: false, short: 'No' }
             ], default: 0 },
 
+            { name: 'gitInit', message: 'Initialize a git repo?', type:'confirm', default:true },
+
             { name: 'lang', type: 'list', choices: [
                 { name: 'javascript', value: 'js' },
                 { name: 'typescript (node project compiled to js)', value: 'ts' }   
@@ -78,7 +80,6 @@ module.exports = class extends Generator {
         ]);
         this.ops = ops;
 
-        //TODO init git repo (.git) folder
         this.usesPkgManager = usePkgManager(ops);
     }
 
@@ -127,13 +128,11 @@ module.exports = class extends Generator {
             );
         }
         if (this.usesPkgManager) {
-            if (this.ops.pkgManager == 'npm') {
-                this.fs.copyTpl(
-                    this.templatePath('package.json'),
-                    this.destinationPath('package.json'),
-                    this.ops //ERROR extname can contain spaces, maybe just replace with -'s
-                );
-            }
+            this.fs.copyTpl(
+                this.templatePath('package.json'),
+                this.destinationPath('package.json'),
+                this.ops //ERROR extname can contain spaces, maybe just replace with -'s
+            );
         }
         const className = camelCase(this.ops.extName);
         if (this.ops.lang == 'js') {
@@ -167,7 +166,12 @@ module.exports = class extends Generator {
         if (this.usesPkgManager) {
             if (this.ops.pkgManager=='npm') {
                 this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
+            //} else if (this.ops.pkgManager=='yarn') {
+            //    this.spawnCommand('yarn', ['add', ...packages, '--dev']);
             }
+        }
+        if (this.ops.gitInit) {
+            this.spawnCommand('git', ['init', '--quiet', '--initial-branch=main']);
         }
     }
 
