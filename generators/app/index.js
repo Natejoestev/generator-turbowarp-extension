@@ -166,8 +166,7 @@ module.exports = class extends Generator {
         }
         if (this.usesPkgManager) {
             if (this.ops.pkgManager=='npm') {
-                this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet']);
-                //TODO maybe have dev dependencies instead of dependencies (all of them rn, are used for development)
+                this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
             }
         }
     }
@@ -175,10 +174,11 @@ module.exports = class extends Generator {
     end() {
         //BUG this prompt get's interrupted by npm install commands
         const {openCode} = this.prompt([
-            { name:'openCode', message: 'Open in VSCode', type:'confirm', default:true }
+            { name:'openCode', message: 'Open in VSCode', type:'confirm', default:false }
         ]);
         if (openCode) {
             this.spawnCommand('code', [this.destinationPath()]);
+            //REMAKE find `code` concrete command
         }
     }
 };
