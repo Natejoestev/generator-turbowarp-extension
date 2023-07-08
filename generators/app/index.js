@@ -23,7 +23,8 @@ module.exports = class extends Generator {
         this.option('quick', { type: Boolean, alias: 'q', description: 'Quick mode, skip all optional prompts and use defaults' });
         this.option('lang', { type: String, alias:'l', description: 'Language, the programing language to use'});
         this.option('git', { type: Boolean, description: 'Init a Git repository'});
-        //TODO add more cli options (srcPath)
+        this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
+        //TODO add more cli options
     }
 
     initializing() {

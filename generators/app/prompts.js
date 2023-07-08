@@ -81,13 +81,21 @@ exports.askForLang = (generator, extensionConfig) => {
 
 exports.askForSourcePath = (generator, extensionConfig) => {
     const when = extensionConfig.lang == 'ts';
-    if (generator.options['quick'] && when) {
+    if (!when) return Promise.resolve();
+
+    const {srcPath} = generator.options;
+    if (srcPath) {
+        extensionConfig.srcPath = srcPath;
+        return Promise.resolve();
+    }
+
+    if (generator.options['quick']) {
         extensionConfig.srcPath = 'src';
         return Promise.resolve();
     }
     
     return generator.prompt(
-        { name: 'srcPath', message: 'What path to src files?', default:'src', when }
+        { name: 'srcPath', message: 'What path to src files?', default:'src' }
     ).then(Q => {
         extensionConfig.srcPath = Q.srcPath;
     });
