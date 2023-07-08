@@ -1,6 +1,7 @@
 {
     "label": "Http server (python)",
     "type": "shell",
+    //TODO maybe add better python server
     "command": "python -m http.server <%= devPort %>",
     "presentation": {
         "reveal": "always",

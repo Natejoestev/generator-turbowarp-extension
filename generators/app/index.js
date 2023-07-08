@@ -1,6 +1,7 @@
 const Generator = require('yeoman-generator');
 const path = require('path');
 const chalk = require('chalk');
+const prompts = require('./prompts');
 
 function camelCase(str) {
     // https://stackoverflow.com/a/2970667
@@ -11,106 +12,66 @@ function camelCase(str) {
 }
 
 module.exports = class extends Generator {
+    usesPkgManager() {
+        return this.extensionConfig.lang == 'ts' || this.extensionConfig.expressServer;
+    };
+
+    constructor(args, opts) {
+        super(args, opts);
+        this.description = 'Generates an extension for Turbowarp to start development.';
+
+        this.option('quick', { type: Boolean, alias: 'q', description: 'Quick mode, skip all optional prompts and use defaults' });
+        this.option('lang', { type: String, alias:'l', description: 'Language, the programing language to use'});
+        this.option('git', { type: Boolean, description: 'Init a Git repository'});
+        //TODO add more cli options (srcPath)
+    }
+
     initializing() {
         const turbowarp = chalk.bold.hex('#ff4c4c');
         this.log('Welcome, to the '+turbowarp('TurboWarp Extension')+' Generator.');
+
+        this.extensionConfig = Object.create(null);
     }
 
     async prompting() {
-        const usePkgManager = ({lang, serverType}) => {
-            return lang == 'ts' || serverType=='express';
-        };
-        const ops = await this.prompt([
-            { name: 'extName', message: 'Extension name:', default:this.appname },
-            { name: 'extId', message: 'Extension Id:',
-            default: ({extName}) => extName.toLowerCase().match(/[a-z0-9]/g).join(''),
-            validate(txt) {
-                const res = txt.match(/[a-z0-9]/g);
-                if (res && res.join('') == txt) return true;
-                return `Only a-z and 0-9 (no uppercase letters or special characters)`;
-            } },
-
-            { name: 'newFolder', message: `Create in new folder?`, type:'expand',
-            choices: ({extName}) => [
-                    { key: 'y', name: `Create a new folder (${extName}).`, value: true, short: 'Yes' },
-                    { key: 'n', name: 'Populate current folder', value: false, short: 'No' }
-            ], default: 0 },
-
-            { name: 'gitInit', message: 'Initialize a git repo?', type:'confirm', default:true },
-
-            { name: 'lang', type: 'list', choices: [
-                { name: 'javascript', value: 'js' },
-                { name: 'typescript (node project compiled to js)', value: 'ts' }   
-            ] },
-            { name: 'srcPath', message: 'What path to src files?', default:'src',
-            when: ({lang}) => lang == 'ts'
-            },
-
-            //TODO maybe have support for other editors
-            { name: 'vscodeInit' , message: 'Initialize vscode dev env?', type:'checkbox',
-            choices({lang}) {
-                return [
-                    { name: 'Launch dev browser', value: 'browser' },
-                    { name: 'Run dev HTTP server on startup', value: 'httpserver' }
-                ].concat(lang!='ts' ? []:
-                    { name: 'Run typescript compiler on startup', value: 'tsc' }
-                );
-            },
-            filter: (ans) => Object.fromEntries(ans.map(k => [k,true]))
-            },
-            { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
-                { name: 'Chrome', value: 'chrome' },
-                { name: 'Edge', value: 'msedge' }
-            ],
-            when: ({vscodeInit}) => vscodeInit['browser']
-            },
-            { name: 'serverType', message: 'What http server to use?', type:'list', choices: [
-                { name: 'Python http.server', value: 'py' },
-                { name: 'Node express server', value: 'express' }
-            ],
-            when: ({vscodeInit}) => vscodeInit['httpserver']
-            },
-            { name: 'devPort' , message: 'Dev Http port:', default: '5010',
-            when: ({vscodeInit}) => vscodeInit['httpserver'] || vscodeInit['browser']
-            },
-
-            { name: 'pkgManager', message: 'What package manager to use?', type: 'list', choices: [
-                'npm'
-            ], when: usePkgManager }
-        ]);
-        this.ops = ops;
-
-        this.usesPkgManager = usePkgManager(ops);
+        await prompts.askForExt(this, this.extensionConfig);
+        await prompts.askForFolder(this, this.extensionConfig);
+        await prompts.askForGit(this, this.extensionConfig);
+        await prompts.askForLang(this, this.extensionConfig);
+        await prompts.askForSourcePath(this, this.extensionConfig);
+        await prompts.askForVSCode(this, this.extensionConfig);
+        await prompts.askForExpress(this, this.extensionConfig);
+        await prompts.askForPort(this, this.extensionConfig);
+        await prompts.askForPkgManager(this, this.extensionConfig);
     }
 
     configuring () {
-        if (this.ops.newFolder) {
-            this.destinationRoot(path.resolve(this.destinationPath(), this.ops.extName));
+        if (this.extensionConfig.newFolder) {
+            this.destinationRoot(path.resolve(this.destinationPath(), this.extensionConfig.extName));
         }
     }
 
     writing() {
-        if (this.ops.vscodeInit['httpserver'] || this.ops.vscodeInit['tsc']) {
+        const {vscode, lang} = this.extensionConfig;
+        if (vscode.init['httpserver'] || vscode.init['tsc']) {
             const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
-            if (this.ops.vscodeInit['httpserver']) {
-                if (this.ops.serverType == 'py') {
-                    content.tasks.push(
-                        JSON.parse(this.fs.read(
-                            this.templatePath('vscode', 'http-python-task.json')
-                        ).replaceAll('<%= devPort %>', this.ops.devPort))
-                    );
-                } else if (this.ops.serverType == 'express') {
-                    content.tasks.push(this.fs.readJSON(
-                        this.templatePath('vscode', 'http-express-task.json')
-                    ));
-                    this.fs.copyTpl(
-                        this.templatePath('server.js'),
-                        this.destinationPath('server.js'),
-                        this.ops
-                    );
-                }
+            if (vscode.serverType == 'py') {
+                content.tasks.push(
+                    JSON.parse(this.fs.read(
+                        this.templatePath('vscode', 'http-python-task.json')
+                    ).replaceAll('<%= devPort %>', this.extensionConfig.devPort)) //REMAKE
+                );
+            } else if (vscode.serverType == 'express') {
+                content.tasks.push(this.fs.readJSON(
+                    this.templatePath('vscode', 'http-express-task.json')
+                ));
+                this.fs.copyTpl(
+                    this.templatePath('server.js'),
+                    this.destinationPath('server.js'),
+                    this.extensionConfig
+                );
             }
-            if (this.ops.vscodeInit['tsc']) {
+            if (vscode.init['tsc']) {
                 content.tasks.push(
                     this.fs.readJSON(this.templatePath('vscode', 'tsc-task.json'))
                 );
@@ -120,58 +81,58 @@ module.exports = class extends Generator {
                 content
             );
         }
-        if (this.ops.vscodeInit['browser']) {
+        if (vscode.init['browser']) {
             this.fs.copyTpl(
                 this.templatePath('vscode', 'browser-launch.json'),
                 this.destinationPath('.vscode', 'launch.json'),
                 this.ops
             );
         }
-        if (this.usesPkgManager) {
+        if (this.usesPkgManager()) {
             this.fs.copyTpl(
                 this.templatePath('package.json'),
                 this.destinationPath('package.json'),
-                this.ops //ERROR extname can contain spaces, maybe just replace with -'s
+                this.extensionConfig //ERROR extname can contain spaces, maybe just replace with -'s
             );
         }
-        const className = camelCase(this.ops.extName);
-        if (this.ops.lang == 'js') {
+        const className = camelCase(this.extensionConfig.extName);
+        if (lang == 'js') {
             this.fs.copyTpl(
                 this.templatePath('js', 'extension.js'),
                 this.destinationPath('extension.js'),
-                Object.assign({className}, this.ops)
+                Object.assign({className}, this.extensionConfig)
             );
-        } else if (this.ops.lang == 'ts') {
+        } else if (lang == 'ts') {
             this.fs.copyTpl(
                 this.templatePath('ts', 'tsconfig.json'),
                 this.destinationPath('tsconfig.json'),
-                this.ops
+                this.extensionConfig
             );
             this.fs.copyTpl(
                 this.templatePath('ts', 'main.ts'),
-                this.destinationPath(this.ops.srcPath, 'main.ts'),
-                Object.assign({className}, this.ops)
+                this.destinationPath(this.extensionConfig.srcPath, 'main.ts'),
+                Object.assign({className}, this.extensionConfig)
             );
         }
     }
 
     install() {
         const packages = [];
-        if (this.ops.lang == 'ts') {
+        if (this.extensionConfig.lang == 'ts') {
             packages.push('typescript', '@turbowarp/types');
         }
-        if (this.ops.serverType == 'express') {
+        if (this.extensionConfig.serverType == 'express') {
             packages.push('express');
         }
-        if (this.usesPkgManager) {
-            if (this.ops.pkgManager=='npm') {
+        if (this.usesPkgManager()) {
+            if (this.extensionConfig.pkgManager=='npm') {
                 this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
             //} else if (this.ops.pkgManager=='yarn') {
             //    this.spawnCommand('yarn', ['add', ...packages, '--dev']);
             }
         }
-        if (this.ops.gitInit) {
-            this.spawnCommand('git', ['init', '--quiet', '--initial-branch=main']);
+        if (this.extensionConfig.gitInit) {
+            this.spawnCommand('git', ['init', '--quiet', '--initial-branch=main']); //TODO option for initial git branch
         }
     }
 
