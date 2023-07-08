@@ -109,12 +109,15 @@ exports.askForVSCode = (generator, extensionConfig) => {
         };
         return Promise.resolve();
     }
+
+    const express = generator.options['expressServer'];
+    const httpTack = express?' (Express)':express==0?' (Python)':'';
     
     return generator.prompt([
         { name: 'init', message: 'Initialize dev env for vscode?', type:'checkbox',
         choices: () => [
                 { name: 'Launch dev browser', value: 'browser' },
-                { name: 'Run dev HTTP server on startup', value: 'httpserver' }
+                { name: `Run dev HTTP server on startup${httpTack}`, value: 'httpserver' }
             ].concat(extensionConfig.lang=='ts'?
                 { name: 'Run typescript compiler on startup', value: 'tsc' }
         :[]),
@@ -125,17 +128,26 @@ exports.askForVSCode = (generator, extensionConfig) => {
             { name: 'Edge', value: 'msedge' }
         ], when: ({init}) => init['browser']
         },
-        { name: 'serverType', message: 'What http server to use?', type:'list', choices: [
-            { name: 'Python http.server', value: 'py' },
-            { name: 'Node express server', value: 'express' }
-        ], when: ({init}) => init['httpserver']
+        { name: 'serverType', message: 'What http server to use?', type:'list',
+        choices: () => [
+                { name: 'Python http.server', value: 'py' }
+            ].concat(express!=0?
+                { name: 'Node express server', value: 'express' }
+        :[]),
+        when: ({init}) => init['httpserver'] && express===undefined
         }
     ]).then(Q => {
         extensionConfig.vscode = Q;
+        if (express) extensionConfig.vscode.serverType = 'express';
     });
 }
 
 exports.askForExpress = (generator, extensionConfig) => {
+    const express = generator.options['expressServer'];
+    if (express != undefined) {
+        extensionConfig.expressServer = express;
+        return Promise.resolve();
+    }
     //if you selected to use the express server in vscode, create the express server
     if (extensionConfig.vscode.serverType == 'express') {
         extensionConfig.expressServer = true;

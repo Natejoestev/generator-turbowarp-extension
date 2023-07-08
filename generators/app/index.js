@@ -20,10 +20,11 @@ module.exports = class extends Generator {
         super(args, opts);
         this.description = 'Generates an extension for Turbowarp to start development.';
 
-        this.option('quick', { type: Boolean, alias: 'q', description: 'Quick mode, skip all optional prompts and use defaults' });
+        this.option('quick', { type: Boolean, alias:'q', description: 'Quick mode, skip all optional prompts and use defaults' });
         this.option('lang', { type: String, alias:'l', description: 'Language, the programing language to use'});
         this.option('git', { type: Boolean, description: 'Init a Git repository'});
         this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
+        this.option('expressServer', { type: Boolean, description: 'use the express server'});
         //TODO add more cli options
     }
 
@@ -66,11 +67,6 @@ module.exports = class extends Generator {
                 content.tasks.push(this.fs.readJSON(
                     this.templatePath('vscode', 'http-express-task.json')
                 ));
-                this.fs.copyTpl(
-                    this.templatePath('server.js'),
-                    this.destinationPath('server.js'),
-                    this.extensionConfig
-                );
             }
             if (vscode.init['tsc']) {
                 content.tasks.push(
@@ -87,6 +83,13 @@ module.exports = class extends Generator {
                 this.templatePath('vscode', 'browser-launch.json'),
                 this.destinationPath('.vscode', 'launch.json'),
                 this.ops
+            );
+        }
+        if (this.extensionConfig.expressServer) {
+            this.fs.copyTpl(
+                this.templatePath('server.js'),
+                this.destinationPath('server.js'),
+                this.extensionConfig
             );
         }
         if (this.usesPkgManager()) {
@@ -133,11 +136,12 @@ module.exports = class extends Generator {
             }
         }
         if (this.extensionConfig.gitInit) {
-            this.spawnCommand('git', ['init', '--quiet', '--initial-branch=main']); //TODO option for initial git branch
+            this.spawnCommand('git', ['init', '--quiet', '--initial-branch=main']);
         }
     }
 
     end() {
+        if (this.options['quick']) return ;
         //BUG this prompt get's interrupted by npm install commands
         const {openCode} = this.prompt([
             { name:'openCode', message: 'Open in VSCode', type:'confirm', default:false }
