@@ -98,31 +98,18 @@ exports.askForSourcePath = (generator, extensionConfig) => {
     });
 }
 
-//TODO maybe have support for other editors
-exports.askForVSCode = (generator, extensionConfig) => {
-    if (generator.options['quick']) {
-        extensionConfig.vscode = {
-            init: {}
-        };
-        return Promise.resolve();
-    }
-
+const askForVSCode = (generator, extensionConfig) => {
     const express = generator.options['expressServer'];
-    const httpTack = express?' (Express)':express==0?' (Python)':'';
+    const httpTack = express?' (Express)':express==false?' (Python)':'';
     
     return generator.prompt([
-        { name: 'init', message: 'Initialize dev env for vscode?', type:'checkbox',
+        { name: 'init', message: 'options for vscode dev env:', type:'checkbox',
         choices: () => [
                 { name: 'Launch dev browser', value: 'browser' },
                 { name: `Run dev HTTP server on startup${httpTack}`, value: 'httpserver' }
             ].concat(extensionConfig.lang=='ts'?
                 { name: 'Run typescript compiler on startup', value: 'tsc' }
-        :[]), filter: validate.filterVSCodeInit
-        },
-        { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
-            { name: 'Chrome', value: 'chrome' },
-            { name: 'Edge', value: 'msedge' }
-        ], when: ({init}) => init['browser']
+        :[]), filter:validate.filterDevEnvInit
         },
         { name: 'serverType', message: 'What http server to use?', type:'list',
         choices: () => [
@@ -130,12 +117,53 @@ exports.askForVSCode = (generator, extensionConfig) => {
             ].concat(express!=0?
                 { name: 'Node express server', value: 'express' }
         :[]),
-        when: ({init}) => init['httpserver'] && express===undefined
+        when: (Q) => Q.init['httpserver'] && express===undefined
         }
-    ]).then(Q => {
-        extensionConfig.vscode = Q;
-        if (express) extensionConfig.vscode.serverType = 'express';
-    });
+    ]);
+}
+const askForRunCLI = (generator, extensionConfig) => {
+    return generator.prompt([
+        { name: 'init', message: 'options for run cli dev env', type:'checkbox', choices: [
+            { name: '(browser) open the test in browser', value: 'browser' }
+        ], filter:validate.filterDevEnvInit}
+    ])
+}
+exports.askForDevEnv = async (generator, extensionConfig) => {
+    extensionConfig.devEnv = {
+        typ: null,
+        init: {}
+    };
+    
+    if (generator.options['quick']) {
+        return Promise.resolve();
+    }
+
+    const {devEnv} = await generator.prompt(
+        { name: 'devEnv', message: 'What development environment do you want to use?', type:'list', choices: [
+            { name: 'VSCode', value: 'vscode' },
+            { name: 'package manager run cli', value: 'runcli' },
+            { name: 'None', value:null }
+        ] }
+    );
+    if (devEnv == null) return ;
+    var Q;
+    if (devEnv == 'vscode') Q = await askForVSCode(generator, extensionConfig);
+    if (devEnv == 'runcli') Q = await askForRunCLI(generator, extensionConfig);
+
+    //shared prompts
+    const {browserType} = await generator.prompt(
+        { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
+            { name: 'Chrome', value: 'chrome' },
+            { name: 'Edge', value: 'msedge' }
+        ], when: Q.init['browser']
+        }
+    );
+    extensionConfig.devEnv = {
+        typ: devEnv,
+        init: Q.init,
+        browserType,
+        serverType: generator.options['expressServer']?'express': Q.serverType
+    };
 }
 
 exports.askForExpress = (generator, extensionConfig) => {
@@ -144,13 +172,13 @@ exports.askForExpress = (generator, extensionConfig) => {
         extensionConfig.expressServer = express;
         return Promise.resolve();
     }
-    //if you selected to use the express server in vscode, create the express server
-    if (extensionConfig.vscode.serverType == 'express') {
+    //if you selected to use the express server in devEnv, create the express server
+    if (extensionConfig.devEnv.serverType == 'express') {
         extensionConfig.expressServer = true;
         return Promise.resolve();
     }
-    //if you selected to use a different server in vscode, don't ask this question
-    if (extensionConfig.vscode.init['httpserver']) return Promise.resolve();
+    //if you selected to use a different server in devEnv, don't ask this question
+    if (extensionConfig.devEnv.init['httpserver']) return Promise.resolve();
 
     if (generator.options['quick']) {
         extensionConfig.expressServer = true;

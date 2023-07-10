@@ -18,13 +18,14 @@ exports.promptExtId = (txt) => {
 
 exports.formatExtId = (extName) => extName.toLowerCase().match(/[a-z0-9]/g).join('');
 
-exports.filterVSCodeInit = (ans) => Object.fromEntries(ans.map(k => [k,true]));
+exports.filterDevEnvInit = (ans) => Object.fromEntries(ans.map(k => [k,true]));
 
 exports.usesPort = (extensionConfig) =>
-    extensionConfig.vscode.init['httpserver'] ||
-    extensionConfig.vscode.init['browser'] ||
+    extensionConfig.devEnv.init['httpserver'] ||
+    extensionConfig.devEnv.init['browser'] ||
     extensionConfig.expressServer;
 
 exports.usesPkgManager = (extensionConfig) =>
     extensionConfig.lang == 'ts' ||
-    this.extensionConfig.expressServer;
+    extensionConfig.expressServer ||
+    extensionConfig.devEnv.typ == 'runcli';

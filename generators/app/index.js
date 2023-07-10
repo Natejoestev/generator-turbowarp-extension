@@ -22,7 +22,7 @@ module.exports = class extends Generator {
         this.option('git', { type: Boolean, description: 'Init a Git repository'});
         this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
         this.option('expressServer', { type: Boolean, description: 'use the express server'});
-        //TODO add more cli options
+        //TODO add more cli options (dev env)
     }
 
     initializing() {
@@ -38,7 +38,7 @@ module.exports = class extends Generator {
         await prompts.askForGit(this, this.extensionConfig);
         await prompts.askForLang(this, this.extensionConfig);
         await prompts.askForSourcePath(this, this.extensionConfig);
-        await prompts.askForVSCode(this, this.extensionConfig);
+        await prompts.askForDevEnv(this, this.extensionConfig);
         await prompts.askForExpress(this, this.extensionConfig);
         await prompts.askForPort(this, this.extensionConfig);
         await prompts.askForPkgManager(this, this.extensionConfig);
@@ -51,36 +51,38 @@ module.exports = class extends Generator {
     }
 
     writing() {
-        const {vscode, lang} = this.extensionConfig;
-        if (vscode.init['httpserver'] || vscode.init['tsc']) {
-            const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
-            if (vscode.serverType == 'py') {
-                content.tasks.push(
-                    JSON.parse(this.fs.read(
-                        this.templatePath('vscode', 'http-python-task.json')
-                    ).replaceAll('<%= devPort %>', this.extensionConfig.devPort)) //REMAKE
+        const {devEnv, lang} = this.extensionConfig;
+        if (devEnv.typ == 'vscode') {
+            if (devEnv.init['httpserver'] || devEnv.init['tsc']) {
+                const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
+                if (devEnv.serverType == 'py') {
+                    content.tasks.push(
+                        JSON.parse(this.fs.read(
+                            this.templatePath('vscode', 'http-python-task.json')
+                        ).replaceAll('<%= devPort %>', this.extensionConfig.devPort)) //REMAKE
+                    );
+                } else if (devEnv.serverType == 'express') {
+                    content.tasks.push(this.fs.readJSON(
+                        this.templatePath('vscode', 'http-express-task.json')
+                    ));
+                }
+                if (devEnv.init['tsc']) {
+                    content.tasks.push(
+                        this.fs.readJSON(this.templatePath('vscode', 'tsc-task.json'))
+                    );
+                }
+                this.fs.writeJSON(
+                    this.destinationPath('.vscode', 'tasks.json'),
+                    content
                 );
-            } else if (vscode.serverType == 'express') {
-                content.tasks.push(this.fs.readJSON(
-                    this.templatePath('vscode', 'http-express-task.json')
-                ));
             }
-            if (vscode.init['tsc']) {
-                content.tasks.push(
-                    this.fs.readJSON(this.templatePath('vscode', 'tsc-task.json'))
+            if (devEnv.init['browser']) {
+                this.fs.copyTpl(
+                    this.templatePath('vscode', 'browser-launch.json'),
+                    this.destinationPath('.vscode', 'launch.json'),
+                    this.extensionConfig
                 );
             }
-            this.fs.writeJSON(
-                this.destinationPath('.vscode', 'tasks.json'),
-                content
-            );
-        }
-        if (vscode.init['browser']) {
-            this.fs.copyTpl(
-                this.templatePath('vscode', 'browser-launch.json'),
-                this.destinationPath('.vscode', 'launch.json'),
-                this.ops
-            );
         }
         if (this.extensionConfig.expressServer) {
             this.fs.copyTpl(
@@ -90,11 +92,13 @@ module.exports = class extends Generator {
             );
         }
         if (validate.usesPkgManager(this.extensionConfig)) {
-            this.fs.copyTpl(
-                this.templatePath('package.json'),
-                this.destinationPath('package.json'),
-                this.extensionConfig //ERROR extname can contain spaces, maybe just replace with -'s
-            );
+            if (!this.fs.exists(this.destinationPath('package.json'))) {
+                this.fs.copyTpl(
+                    this.templatePath('package.json'),
+                    this.destinationPath('package.json'),
+                    this.extensionConfig //ERROR extname can contain spaces, maybe just replace with -'s
+                );
+            }
         }
         const className = camelCase(this.extensionConfig.extName);
         if (lang == 'js') {
@@ -119,16 +123,30 @@ module.exports = class extends Generator {
 
     install() {
         const packages = [];
+        const scripts = [];
         if (this.extensionConfig.lang == 'ts') {
             packages.push('typescript', '@turbowarp/types');
         }
-        if (this.extensionConfig.serverType == 'express') {
+        if (this.extensionConfig.expressServer) {
             packages.push('express');
+        }
+        const {devEnv, devPort} = this.extensionConfig;
+        if (devEnv.typ == 'runcli' && devEnv.init['browser']) {
+            scripts.push({
+                name:'browser',
+                cmd:`${devEnv.browserType} https://turbowarp.org/editor?extension=http://localhost:${devPort}/extension.js`
+            });
         }
         if (validate.usesPkgManager(this.extensionConfig)) {
             if (this.extensionConfig.pkgManager=='npm') {
-                this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
-            //} else if (this.ops.pkgManager=='yarn') {
+                if (packages.length>0) this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
+                for (const script of scripts) {
+                    this.spawnCommand('npm', ['set-script', script.name, `${script.cmd}`]);
+                    //REMAKE maybe just have it json instead of running a command
+                }
+                //ERROR didn't install packages
+                //TODO test other options for devEnv
+            //} else if (this.extensionConfig.pkgManager=='yarn') {
             //    this.spawnCommand('yarn', ['add', ...packages, '--dev']);
             }
         }
