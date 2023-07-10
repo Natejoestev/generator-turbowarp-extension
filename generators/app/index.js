@@ -2,6 +2,7 @@ const Generator = require('yeoman-generator');
 const path = require('path');
 const chalk = require('chalk');
 const prompts = require('./prompts');
+const validate = require('./validate');
 
 function camelCase(str) {
     // https://stackoverflow.com/a/2970667
@@ -12,10 +13,6 @@ function camelCase(str) {
 }
 
 module.exports = class extends Generator {
-    usesPkgManager() {
-        return this.extensionConfig.lang == 'ts' || this.extensionConfig.expressServer;
-    };
-
     constructor(args, opts) {
         super(args, opts);
         this.description = 'Generates an extension for Turbowarp to start development.';
@@ -92,7 +89,7 @@ module.exports = class extends Generator {
                 this.extensionConfig
             );
         }
-        if (this.usesPkgManager()) {
+        if (validate.usesPkgManager(this.extensionConfig)) {
             this.fs.copyTpl(
                 this.templatePath('package.json'),
                 this.destinationPath('package.json'),
@@ -128,7 +125,7 @@ module.exports = class extends Generator {
         if (this.extensionConfig.serverType == 'express') {
             packages.push('express');
         }
-        if (this.usesPkgManager()) {
+        if (validate.usesPkgManager(this.extensionConfig)) {
             if (this.extensionConfig.pkgManager=='npm') {
                 this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
             //} else if (this.ops.pkgManager=='yarn') {

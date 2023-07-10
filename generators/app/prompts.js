@@ -3,19 +3,15 @@ const validate = require('./validate');
 exports.askForExt = (generator, extensionConfig) => {
     if (generator.options['quick']) {
         extensionConfig.extName = generator.appname;
-        extensionConfig.extId = generator.appname.toLowerCase().match(/[a-z0-9]/g).join('')
+        extensionConfig.extId = validate.formatExtId(generator.appname);
         return Promise.resolve();
     }
 
     return generator.prompt([
         {name: 'extName', message: 'Extension name:', default:generator.appname},
         { name: 'extId', message: 'Extension Id:',
-        default: ({extName}) => extName.toLowerCase().match(/[a-z0-9]/g).join(''),
-        validate(txt) {
-            const res = txt.match(/[a-z0-9]/g);
-            if (res && res.join('') == txt) return true;
-            return `Only a-z and 0-9 (no uppercase letters or special characters)`;
-        } }
+        default: ({extName}) => validate.formatExtId(extName),
+        validate: validate.promptExtId }
     ]).then(Q => {
         extensionConfig.extName = Q.extName;
         extensionConfig.extId = Q.extId;
@@ -121,8 +117,7 @@ exports.askForVSCode = (generator, extensionConfig) => {
                 { name: `Run dev HTTP server on startup${httpTack}`, value: 'httpserver' }
             ].concat(extensionConfig.lang=='ts'?
                 { name: 'Run typescript compiler on startup', value: 'tsc' }
-        :[]),
-        filter: (ans) => Object.fromEntries(ans.map(k => [k,true]))
+        :[]), filter: validate.filterVSCodeInit
         },
         { name: 'browserType', message: 'What browser to use?', type:'list', choices: [
             { name: 'Chrome', value: 'chrome' },
@@ -170,7 +165,7 @@ exports.askForExpress = (generator, extensionConfig) => {
 }
 
 exports.askForPort = (generator, extensionConfig) => {
-    const when = extensionConfig.vscode.init['httpserver'] || extensionConfig.vscode.init['browser'] || extensionConfig.expressServer;
+    const when = validate.usesPort(extensionConfig);
     if (generator.options['quick'] && when) {
         extensionConfig.devPort = '5010';
         return Promise.resolve();
@@ -184,7 +179,8 @@ exports.askForPort = (generator, extensionConfig) => {
 }
 
 exports.askForPkgManager = (generator, extensionConfig) => {
-    if (generator.options['quick'] && generator.usesPkgManager()) {
+    const when = validate.usesPkgManager(extensionConfig);
+    if (generator.options['quick'] && when) {
         extensionConfig.pkgManager = 'npm';
         return Promise.resolve();
     }
@@ -192,7 +188,7 @@ exports.askForPkgManager = (generator, extensionConfig) => {
     return generator.prompt(
         { name: 'pkgManager', message: 'What package manager to use?', type: 'list', choices: [
             'npm'
-        ], when: generator.usesPkgManager() }
+        ], when }
     ).then(Q => {
         extensionConfig.pkgManager = Q.pkgManager;
     });
