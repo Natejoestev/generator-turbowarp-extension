@@ -1,3 +1,4 @@
+const validate = require('./validate');
 
 exports.askForExt = (generator, extensionConfig) => {
     if (generator.options['quick']) {
@@ -58,8 +59,8 @@ exports.askForGit = (generator, extensionConfig) => {
 }
 
 exports.askForLang = (generator, extensionConfig) => {
-    const lang = generator.options;
-    if (lang && false) { //TODO check if this is a valid long or short repr of the language name
+    const {lang} = generator.options;
+    if (lang && validate.isLanugage(lang)) {
         extensionConfig.lang = lang;
         return Promise.resolve();
     }
