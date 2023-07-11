@@ -135,7 +135,14 @@ exports.askForDevEnv = async (generator, extensionConfig) => {
     };
     
     if (generator.options['quick']) {
-        return Promise.resolve();
+        extensionConfig.devEnv = {
+            typ: 'runcli',
+            init: {
+                browser: true
+            },
+            browserType: 'chrome',
+        };
+        return ;
     }
 
     const {devEnv} = await generator.prompt(

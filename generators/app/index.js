@@ -22,7 +22,7 @@ module.exports = class extends Generator {
         this.option('git', { type: Boolean, description: 'Init a Git repository'});
         this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
         this.option('expressServer', { type: Boolean, description: 'use the express server'});
-        //TODO add more cli options (dev env)
+        //TODO add more cli options (dev env, browser)
     }
 
     initializing() {
@@ -51,7 +51,7 @@ module.exports = class extends Generator {
     }
 
     writing() {
-        const {devEnv, lang} = this.extensionConfig;
+        const {devEnv, devPort, lang} = this.extensionConfig;
         if (devEnv.typ == 'vscode') {
             if (devEnv.init['httpserver'] || devEnv.init['tsc']) {
                 const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
@@ -59,7 +59,7 @@ module.exports = class extends Generator {
                     content.tasks.push(
                         JSON.parse(this.fs.read(
                             this.templatePath('vscode', 'http-python-task.json')
-                        ).replaceAll('<%= devPort %>', this.extensionConfig.devPort)) //REMAKE
+                        ).replaceAll('<%= devPort %>', devPort)) //REMAKE
                     );
                 } else if (devEnv.serverType == 'express') {
                     content.tasks.push(this.fs.readJSON(
@@ -92,12 +92,22 @@ module.exports = class extends Generator {
             );
         }
         if (validate.usesPkgManager(this.extensionConfig)) {
-            if (!this.fs.exists(this.destinationPath('package.json'))) {
+            const pkgDest = this.destinationPath('package.json')
+            if (!this.fs.exists(pkgDest)) {
                 this.fs.copyTpl(
                     this.templatePath('package.json'),
-                    this.destinationPath('package.json'),
+                    pkgDest,
                     this.extensionConfig //ERROR extname can contain spaces, maybe just replace with -'s
                 );
+            }
+            const scripts = {};
+            if (devEnv.typ == 'runcli' && devEnv.init['browser']) {
+                scripts['browser'] = `${devEnv.browserType} https://turbowarp.org/editor?extension=http://localhost:${devPort}/extension.js`;
+            }
+            if (Object.keys(scripts).length!=0) {
+                const pkg = this.fs.readJSON(pkgDest);
+                pkg['scripts'] = scripts;
+                this.fs.writeJSON(pkgDest, pkg, undefined, '  ');
             }
         }
         const className = camelCase(this.extensionConfig.extName);
@@ -123,29 +133,15 @@ module.exports = class extends Generator {
 
     install() {
         const packages = [];
-        const scripts = [];
         if (this.extensionConfig.lang == 'ts') {
             packages.push('typescript', '@turbowarp/types');
         }
         if (this.extensionConfig.expressServer) {
             packages.push('express');
         }
-        const {devEnv, devPort} = this.extensionConfig;
-        if (devEnv.typ == 'runcli' && devEnv.init['browser']) {
-            scripts.push({
-                name:'browser',
-                cmd:`${devEnv.browserType} https://turbowarp.org/editor?extension=http://localhost:${devPort}/extension.js`
-            });
-        }
         if (validate.usesPkgManager(this.extensionConfig)) {
             if (this.extensionConfig.pkgManager=='npm') {
                 if (packages.length>0) this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
-                for (const script of scripts) {
-                    this.spawnCommand('npm', ['set-script', script.name, `${script.cmd}`]);
-                    //REMAKE maybe just have it json instead of running a command
-                }
-                //ERROR didn't install packages
-                //TODO test other options for devEnv
             //} else if (this.extensionConfig.pkgManager=='yarn') {
             //    this.spawnCommand('yarn', ['add', ...packages, '--dev']);
             }
