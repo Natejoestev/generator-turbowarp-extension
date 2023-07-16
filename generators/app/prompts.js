@@ -1,4 +1,5 @@
 const validate = require('./validate');
+const chalk = require('chalk');
 
 exports.askForExt = (generator, extensionConfig) => {
     if (generator.options['quick']) {
@@ -227,4 +228,22 @@ exports.askForPkgManager = (generator, extensionConfig) => {
     ).then(Q => {
         extensionConfig.pkgManager = Q.pkgManager;
     });
+}
+
+exports.showClosingMessage = (log, extensionConfig) => {
+    const {devEnv} = extensionConfig;
+    if (devEnv.typ == 'vscode') {
+        if (devEnv.init.browser) log('Run browser test with: '+chalk.green('f5'));
+        const {httpserver, tsc} = devEnv.init;
+        if (httpserver || tsc) {
+            log((tsc?'TypeScript Compiler':'')+
+                (httpserver&&tsc?' and ':'')+
+                (httpserver?'HTTP Server':'')+
+                ' will run on startup');
+        }
+    } else if (devEnv.typ == 'runcli') {
+        if (devEnv.init.browser) log('Run browser test with: '+chalk.blue(extensionConfig.pkgManager+' run browser'));
+        if (extensionConfig.lang == 'ts') log('Run TypeScript Compiler with: '+chalk.blueBright('npx tsc --watch'));
+        if (extensionConfig.expressServer) log('Run HTTP Server with: '+chalk.blueBright('node server.js'));
+    }
 }

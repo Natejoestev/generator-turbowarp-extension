@@ -4,10 +4,10 @@ interface extensionConfig {
     extId: String,
     newFolder: Boolean,
     gitInit: Boolean,
-    lang: String,
+    lang: 'ts'|'js',
     srcPath: String|undefined,
     devEnv: {
-        typ: String,
+        typ: 'vscode'|'runcli',
         init: {
             "browser": true|undefined,
             "httpserver": true|undefined,
@@ -17,5 +17,6 @@ interface extensionConfig {
         serverType: String|undefined
     },
     expressServer: Boolean|undefined,
-    devPort: String|undefined
+    devPort: String|undefined,
+    pkgManager: 'npm'
 }

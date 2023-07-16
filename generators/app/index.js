@@ -141,7 +141,7 @@ module.exports = class extends Generator {
         }
         if (validate.usesPkgManager(this.extensionConfig)) {
             if (this.extensionConfig.pkgManager=='npm') {
-                if (packages.length>0) this.spawnCommand('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
+                if (packages.length>0) this.spawnCommandSync('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
             //} else if (this.extensionConfig.pkgManager=='yarn') {
             //    this.spawnCommand('yarn', ['add', ...packages, '--dev']);
             }
@@ -151,10 +151,11 @@ module.exports = class extends Generator {
         }
     }
 
-    end() {
+    async end() {
         if (this.options['quick']) return ;
-        //BUG this prompt get's interrupted by npm install commands
-        const {openCode} = this.prompt([
+        prompts.showClosingMessage(this.log, this.extensionConfig);
+        //TODO move OpenCode to prompt &| check for devEnv=='runcli'
+        const {openCode} = await this.prompt([
             { name:'openCode', message: 'Open in VSCode', type:'confirm', default:false }
         ]);
         if (openCode) {
