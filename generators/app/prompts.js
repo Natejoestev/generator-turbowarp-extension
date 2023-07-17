@@ -1,5 +1,6 @@
 const validate = require('./validate');
 const chalk = require('chalk');
+const which = require('which');
 
 exports.askForExt = (generator, extensionConfig) => {
     if (generator.options['quick']) {
@@ -155,6 +156,7 @@ exports.askForDevEnv = async (generator, extensionConfig) => {
     );
     if (devEnv == null) return ;
     var Q;
+    //TODO add short for init options
     if (devEnv == 'vscode') Q = await askForVSCode(generator, extensionConfig);
     if (devEnv == 'runcli') Q = await askForRunCLI(generator, extensionConfig);
 
@@ -245,5 +247,29 @@ exports.showClosingMessage = (log, extensionConfig) => {
         if (devEnv.init.browser) log('Run browser test with: '+chalk.blue(extensionConfig.pkgManager+' run browser'));
         if (extensionConfig.lang == 'ts') log('Run TypeScript Compiler with: '+chalk.blueBright('npx tsc --watch'));
         if (extensionConfig.expressServer) log('Run HTTP Server with: '+chalk.blueBright('node server.js'));
+    }
+}
+
+exports.askOpenWithCode = async (generator, extensionConfig) => {
+    if (generator.options['quick']) return ;
+    const codeConcreate = await which('code').catch(() => undefined);
+
+    if (generator.options['vscode']) {
+        if (codeConcreate) {
+            generator.log(`Opening destination in vscode.`);
+            generator.spawnCommand(codeConcreate, [generator.destinationPath()]);
+        } else {
+            generator.log('Couldn\'t find '+chalk.blue('code')+' command');
+        }
+        return ;
+    }
+    if (!codeConcreate) return ;
+
+    const {openCode} = await generator.prompt(
+        { name:'openCode', message: 'Open in VSCode', type:'confirm', default:false }
+    );
+
+    if (openCode) {
+        generator.spawnCommand(codeConcreate, [generator.destinationPath()]);
     }
 }

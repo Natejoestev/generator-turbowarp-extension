@@ -22,6 +22,7 @@ module.exports = class extends Generator {
         this.option('git', { type: Boolean, description: 'Init a Git repository'});
         this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
         this.option('expressServer', { type: Boolean, description: 'use the express server'});
+        this.option('vscode', { type: Boolean, description: 'open in vscode'});
         //TODO add more cli options (dev env, browser)
     }
 
@@ -155,12 +156,6 @@ module.exports = class extends Generator {
         if (this.options['quick']) return ;
         prompts.showClosingMessage(this.log, this.extensionConfig);
         //TODO move OpenCode to prompt &| check for devEnv=='runcli'
-        const {openCode} = await this.prompt([
-            { name:'openCode', message: 'Open in VSCode', type:'confirm', default:false }
-        ]);
-        if (openCode) {
-            this.spawnCommand('code', [this.destinationPath()]);
-            //REMAKE find `code` concrete command
-        }
+        await prompts.askOpenWithCode(this, this.extensionConfig);
     }
 };
