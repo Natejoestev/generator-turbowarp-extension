@@ -107,10 +107,10 @@ const askForVSCode = (generator, extensionConfig) => {
     return generator.prompt([
         { name: 'init', message: 'options for vscode dev env:', type:'checkbox',
         choices: () => [
-                { name: 'Launch dev browser', value: 'browser' },
-                { name: `Run dev HTTP server on startup${httpTack}`, value: 'httpserver' }
+                { name: 'Launch dev browser', value: 'browser', short:'Browser' },
+                { name: `Run dev HTTP server on startup${httpTack}`, value: 'httpserver', short:'HTTP Server' }
             ].concat(extensionConfig.lang=='ts'?
-                { name: 'Run typescript compiler on startup', value: 'tsc' }
+                { name: 'Run typescript compiler on startup', value: 'tsc', short:'TypeScript Compiler' }
         :[]), filter:validate.filterDevEnvInit
         },
         { name: 'serverType', message: 'What http server to use?', type:'list',
@@ -126,7 +126,7 @@ const askForVSCode = (generator, extensionConfig) => {
 const askForRunCLI = (generator, extensionConfig) => {
     return generator.prompt([
         { name: 'init', message: 'options for run cli dev env', type:'checkbox', choices: [
-            { name: '(browser) open the test in browser', value: 'browser' }
+            { name: '(browser) open the test in browser', value: 'browser', short:'browser' }
         ], filter:validate.filterDevEnvInit}
     ])
 }
@@ -156,7 +156,6 @@ exports.askForDevEnv = async (generator, extensionConfig) => {
     );
     if (devEnv == null) return ;
     var Q;
-    //TODO add short for init options
     if (devEnv == 'vscode') Q = await askForVSCode(generator, extensionConfig);
     if (devEnv == 'runcli') Q = await askForRunCLI(generator, extensionConfig);
 
