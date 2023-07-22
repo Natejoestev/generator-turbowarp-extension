@@ -155,7 +155,6 @@ module.exports = class extends Generator {
     async end() {
         if (this.options['quick']) return ;
         prompts.showClosingMessage(this.log, this.extensionConfig);
-        //TODO move OpenCode to prompt &| check for devEnv=='runcli'
         await prompts.askOpenWithCode(this, this.extensionConfig);
     }
 };

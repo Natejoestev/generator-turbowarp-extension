@@ -1,7 +1,7 @@
 {
     "label": "Http server (python)",
     "type": "shell",
-    //TODO maybe add better python server
+    //TODO maybe add better python server or remove it entirely
     "command": "python -m http.server <%= devPort %>",
     "presentation": {
         "reveal": "always",
