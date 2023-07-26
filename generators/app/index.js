@@ -141,6 +141,7 @@ module.exports = class extends Generator {
             packages.push('express');
         }
         if (validate.usesPkgManager(this.extensionConfig)) {
+            this.log(`Using ${this.extensionConfig.pkgManager} to install required packages.`);
             if (this.extensionConfig.pkgManager=='npm') {
                 if (packages.length>0) this.spawnCommandSync('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
             //} else if (this.extensionConfig.pkgManager=='yarn') {
