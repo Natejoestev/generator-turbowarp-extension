@@ -26,10 +26,12 @@ exports.askForFolder = (generator, extensionConfig) => {
         return Promise.resolve();
     }
 
+    const newName = chalk.bold.green(`./${extensionConfig.extName}`);
+
     return generator.prompt(
-        { name: 'newFolder', message: `Create in new folder?`, type:'expand',
-        choices: ({extName}) => [
-            { key: 'y', name: `Create a new folder (${extName}).`, value: true, short: 'Yes' },
+        { name: 'newFolder', message: `Create in new folder? (${newName})`, type:'expand',
+        choices: () => [
+            { key: 'y', name: 'Create a new folder.', value: true, short: 'Yes' },
             { key: 'n', name: 'Populate current folder', value: false, short: 'No' }
         ], default: 0 }
     ).then(Q => {
