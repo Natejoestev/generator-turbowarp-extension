@@ -98,7 +98,9 @@ module.exports = class extends Generator {
                 this.fs.copyTpl(
                     this.templatePath('package.json'),
                     pkgDest,
-                    this.extensionConfig //ERROR extname can contain spaces, maybe just replace with -'s
+                    {...this.extensionConfig,
+                        extName:validate.formatExtForPackage(this.extensionConfig.extName)
+                    }
                 );
             }
             const scripts = {};

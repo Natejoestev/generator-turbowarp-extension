@@ -17,6 +17,7 @@ exports.promptExtId = (txt) => {
 }
 
 exports.formatExtId = (extName) => extName.toLowerCase().match(/[a-z0-9]/g).join('');
+exports.formatExtForPackage = (extName) => extName.replaceAll(/ +/g, "-");
 
 exports.filterDevEnvInit = (ans) => Object.fromEntries(ans.map(k => [k,true]));
 
