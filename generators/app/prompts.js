@@ -218,17 +218,21 @@ exports.askForPort = (generator, extensionConfig) => {
 }
 
 exports.askForPkgManager = (generator, extensionConfig) => {
-    const when = validate.usesPkgManager(extensionConfig);
-    if (generator.options['quick'] && when) {
+    if (!validate.usesPkgManager(extensionConfig)) return Promise.resolve();
+    const choices = generator.packageManagerOptions;
+
+    const pmOption = generator.options.packageManager;
+    if (pmOption && validate.isPackageManager(pmOption, choices)) {
+        extensionConfig.pkgManager = pmOption;
+        return Promise.resolve();
+    }
+    if (generator.options['quick']) {
         extensionConfig.pkgManager = 'npm';
         return Promise.resolve();
     }
     
     return generator.prompt(
-        { name: 'pkgManager', message: 'What package manager to use?', type: 'list', choices: [
-            'npm'
-            //TODO add more package managers
-        ], when }
+        { name: 'pkgManager', message: 'What package manager to use?', type: 'list', choices}
     ).then(Q => {
         extensionConfig.pkgManager = Q.pkgManager;
     });

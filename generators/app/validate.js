@@ -9,6 +9,11 @@ exports.isLanugage = (txt) => {
     if (languages[l]) return languages[l];
     return false;
 }
+exports.isPackageManager = (txt, choices) => {
+    const m = txt.toLowerCase();
+    if (choices.includes(m)) return m;
+    return false;
+}
 
 exports.promptExtId = (txt) => {
     const res = txt.match(/[a-z0-9]/g);

@@ -18,13 +18,19 @@ module.exports = class extends Generator {
         super(args, opts);
         this.description = 'Generates an extension for Turbowarp to start development.';
 
+        this.packageManagerOptions = [
+            'npm'
+            //TODO add more package managers
+        ];
+
         this.option('quick', { type: Boolean, alias:'q', description: 'Quick mode, skip all optional prompts and use defaults' });
         this.option('lang', { type: String, alias:'l', description: 'Language, the programing language to use'});
         this.option('git', { type: Boolean, description: 'Init a Git repository'});
         this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
         this.option('expressServer', { type: Boolean, description: 'use the express server'});
         this.option('vscode', { type: Boolean, description: 'open in vscode'});
-        //TODO add more cli options (dev env, package manager, browser)
+        this.option('packageManager', { type: String, alias:'pm', description:'Package manager to use (npm)'})
+        //TODO add more cli options (dev env, browser)
     }
 
     initializing() {
