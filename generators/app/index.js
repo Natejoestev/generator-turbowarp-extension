@@ -3,6 +3,7 @@ const path = require('path');
 const chalk = require('chalk');
 const prompts = require('./prompts');
 const validate = require('./validate');
+//TODO migrate to typescript
 
 function camelCase(str) {
     // https://stackoverflow.com/a/2970667
@@ -23,12 +24,12 @@ module.exports = class extends Generator {
         this.option('srcPath', { type: String, alias:'src', description: 'Directory to place typescript source files in.'});
         this.option('expressServer', { type: Boolean, description: 'use the express server'});
         this.option('vscode', { type: Boolean, description: 'open in vscode'});
-        //TODO add more cli options (dev env, browser)
+        //TODO add more cli options (dev env, package manager, browser)
     }
 
     initializing() {
         const turbowarp = chalk.bold.hex('#ff4c4c');
-        this.log('Welcome, to the '+turbowarp('TurboWarp Extension')+' Generator.');
+        this.log(`Welcome, to the ${turbowarp('TurboWarp Extension')} Generator.`);
 
         this.extensionConfig = Object.create(null);
     }
@@ -146,6 +147,7 @@ module.exports = class extends Generator {
             this.log(`Using ${this.extensionConfig.pkgManager} to install required packages.`);
             if (this.extensionConfig.pkgManager=='npm') {
                 if (packages.length>0) this.spawnCommandSync('npm', ['install', ...packages, '-y', '--quiet', '--save-dev']);
+            //TODO add more package managers
             //} else if (this.extensionConfig.pkgManager=='yarn') {
             //    this.spawnCommand('yarn', ['add', ...packages, '--dev']);
             }

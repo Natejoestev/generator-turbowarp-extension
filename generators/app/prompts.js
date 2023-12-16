@@ -227,6 +227,7 @@ exports.askForPkgManager = (generator, extensionConfig) => {
     return generator.prompt(
         { name: 'pkgManager', message: 'What package manager to use?', type: 'list', choices: [
             'npm'
+            //TODO add more package managers
         ], when }
     ).then(Q => {
         extensionConfig.pkgManager = Q.pkgManager;
