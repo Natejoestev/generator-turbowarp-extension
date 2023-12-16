@@ -1,13 +1,14 @@
 {
   "name": "generator-turbowarp-extension",
   "version": "1.0.0",
-  "description": "",
+  "description": "Generator for Turbowarp extensions.",
   "keywords": [
-    "yeoman-generator"
+    "yeoman-generator",
+    "turbowarp"
   ],
   "author": "Natejoestev",
   "repository": "github:Natejoestev/generator-turbowarp-extension",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "yeoman-generator": "^5.9.0"
   }
