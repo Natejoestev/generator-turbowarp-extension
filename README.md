@@ -10,7 +10,7 @@ This is a [Yeoman](https://yeoman.io/) Generator to generate the code for a [Tur
 1. Make sure you have [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) installed.
 2. to install run:
   ```
-npm i git://github.com/natejoestev/generator-turbowarp-extension.git#v1.0.0
+npm i -g git://github.com/natejoestev/generator-turbowarp-extension.git#v1.0.0
   ```
   in your commandline.
 
