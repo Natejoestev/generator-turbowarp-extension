@@ -6,6 +6,14 @@
 
 This is a [Yeoman](https://yeoman.io/) Generator to generate the code for a [Turbowarp](https://turbowarp.org/) Extension.
 
+## Install
+1. Make sure you have [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) installed.
+2. to install run:
+  ```
+npm i git://github.com/natejoestev/generator-turbowarp-extension.git#v1.0.0
+  ```
+  in your commandline.
+
 ## Sponsor
 This project is completly free to use.
 It would mean a lot to support me on [Patreon](patreon.com/Natejoestev)
