@@ -1,4 +1,4 @@
-import ExtensionConfig from "./types";
+import {ExtensionConfig} from "./types";
 
 export const isLanugage = (txt:String) => {
     const l = txt.toLowerCase();
