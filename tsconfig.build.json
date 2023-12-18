@@ -4,6 +4,7 @@
         "rootDir": "src",
         "outDir": "generators",
         "declaration": false,
+        "removeComments": true,
     },
     "include": [
         "src"
