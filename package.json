@@ -6,10 +6,28 @@
     "yeoman-generator",
     "turbowarp"
   ],
+  "scripts": {
+    "clean": "rimraf ./generators",
+    "copyTmpl": "cpy app/templates ../../generators --cwd=src",
+    "build": "npm run clean && tsc -p tsconfig.build.json && npm run copyTmpl"
+  },
   "author": "Natejoestev",
   "repository": "github:Natejoestev/generator-turbowarp-extension",
   "license": "MIT",
   "dependencies": {
+    "which": "^4.0.0",
     "yeoman-generator": "^5.9.0"
+  },
+  "devDependencies": {
+    "@types/which": "^3.0.3",
+    "@types/yeoman-assert": "^3.1.4",
+    "@types/yeoman-generator": "^5.2.14",
+    "@types/yeoman-test": "^4.0.6",
+    "cpy-cli": "^5.0.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "yeoman-assert": "^3.1.1",
+    "yeoman-environment": "^3.19.3",
+    "yeoman-test": "^8.2.0"
   }
 }

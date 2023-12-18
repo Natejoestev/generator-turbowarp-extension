@@ -1,32 +1,39 @@
-const validate = require('./validate');
-const chalk = require('chalk');
-const which = require('which');
 
-exports.askForExt = (generator, extensionConfig) => {
+import * as validate from "./validate";
+import * as chalk from 'chalk';
+import which from 'which';
+import {ExtensionConfig,Gen} from "./types";
+
+const packageManagers = [
+    'npm'
+    //TODO add more package managers
+];
+
+export const askForExt = (generator:Gen, extConf:ExtensionConfig) => {
     if (generator.options['quick']) {
-        extensionConfig.extName = generator.appname;
-        extensionConfig.extId = validate.formatExtId(generator.appname);
+        extConf.extName = generator.appname;
+        extConf.extId = validate.formatExtId(generator.appname);
         return Promise.resolve();
     }
 
     return generator.prompt([
         {name: 'extName', message: 'Extension name:', default:generator.appname},
         { name: 'extId', message: 'Extension Id:',
-        default: ({extName}) => validate.formatExtId(extName),
+        default: ({extName}:{extName:string}) => validate.formatExtId(extName),
         validate: validate.promptExtId }
     ]).then(Q => {
-        extensionConfig.extName = Q.extName;
-        extensionConfig.extId = Q.extId;
+        extConf.extName = Q.extName;
+        extConf.extId = Q.extId;
     });
 }
 
-exports.askForFolder = (generator, extensionConfig) => {
+export const askForFolder = (generator:Gen,extConf:ExtensionConfig) => {
     if (generator.options['quick']) {
-        extensionConfig.newFolder = true;
+        extConf.newFolder = true;
         return Promise.resolve();
     }
 
-    const newName = chalk.bold.green(`./${extensionConfig.extName}`);
+    const newName = chalk.bold.green(`./${extConf.extName}`);
 
     return generator.prompt(
         { name: 'newFolder', message: `Create in new folder? (${newName})`, type:'expand',
@@ -35,38 +42,38 @@ exports.askForFolder = (generator, extensionConfig) => {
             { key: 'n', name: 'Populate current folder', value: false, short: 'No' }
         ], default: 0 }
     ).then(Q => {
-        extensionConfig.newFolder = Q.newFolder
+        extConf.newFolder = Q.newFolder
     });
 }
 
-exports.askForGit = (generator, extensionConfig) => {
+export const askForGit = (generator:Gen,extConf:ExtensionConfig) => {
     const {git} = generator.options;
     if (git != undefined) {
-        extensionConfig.gitInit = git;
+        extConf.gitInit = git;
         return Promise.resolve();
     }
 
     if (generator.options['quick']) {
-        extensionConfig.gitInit = true;
+        extConf.gitInit = true;
         return Promise.resolve();
     }
 
     return generator.prompt(
         { name: 'gitInit', message: 'Initialize a git repo?', type:'confirm', default:true }
     ).then(Q => {
-        extensionConfig.gitInit = Q.gitInit;
+        extConf.gitInit = Q.gitInit;
     })
 }
 
-exports.askForLang = (generator, extensionConfig) => {
+export const askForLang = (generator:Gen,extConf:ExtensionConfig) => {
     const {lang} = generator.options;
     if (lang && validate.isLanugage(lang)) {
-        extensionConfig.lang = lang;
+        extConf.lang = lang;
         return Promise.resolve();
     }
 
     if (generator.options['quick']) {
-        extensionConfig.lang = 'js';
+        extConf.lang = 'js';
         return Promise.resolve();
     }
     
@@ -76,33 +83,33 @@ exports.askForLang = (generator, extensionConfig) => {
             { name: 'typescript (node project compiled to js)', value: 'ts' }   
         ]}
     ).then(Q => {
-        extensionConfig.lang = Q.lang;
+        extConf.lang = Q.lang;
     });
 }
 
-exports.askForSourcePath = (generator, extensionConfig) => {
-    const when = extensionConfig.lang == 'ts';
+export const askForSourcePath = (generator:Gen,extConf:ExtensionConfig) => {
+    const when = extConf.lang == 'ts';
     if (!when) return Promise.resolve();
 
     const {srcPath} = generator.options;
     if (srcPath) {
-        extensionConfig.srcPath = srcPath;
+        extConf.srcPath = srcPath;
         return Promise.resolve();
     }
 
     if (generator.options['quick']) {
-        extensionConfig.srcPath = 'src';
+        extConf.srcPath = 'src';
         return Promise.resolve();
     }
     
     return generator.prompt(
         { name: 'srcPath', message: 'What path to src files?', default:'src' }
     ).then(Q => {
-        extensionConfig.srcPath = Q.srcPath;
+        extConf.srcPath = Q.srcPath;
     });
 }
 
-const askForVSCode = (generator, extensionConfig) => {
+const askForVSCode = (generator:Gen,extConf:ExtensionConfig) => {
     const express = generator.options['expressServer'];
     const httpTack = express?' (Express)':express==false?' (Python)':'';
     
@@ -111,35 +118,35 @@ const askForVSCode = (generator, extensionConfig) => {
         choices: () => [
                 { name: 'Launch dev browser', value: 'browser', short:'Browser' },
                 { name: `Run dev HTTP server on startup${httpTack}`, value: 'httpserver', short:'HTTP Server' }
-            ].concat(extensionConfig.lang=='ts'?
+            ].concat(extConf.lang=='ts'?
                 { name: 'Run typescript compiler on startup', value: 'tsc', short:'TypeScript Compiler' }
         :[]), filter:validate.filterDevEnvInit
         },
         { name: 'serverType', message: 'What http server to use?', type:'list',
         choices: () => [
                 { name: 'Python http.server', value: 'py' }
-            ].concat(express!=0?
+            ].concat(express?
                 { name: 'Node express server', value: 'express' }
         :[]),
         when: (Q) => Q.init['httpserver'] && express===undefined
         }
     ]);
 }
-const askForRunCLI = (generator, extensionConfig) => {
+const askForRunCLI = (generator:Gen,extConf:ExtensionConfig) => {
     return generator.prompt([
         { name: 'init', message: 'options for run cli dev env', type:'checkbox', choices: [
             { name: '(browser) open the test in browser', value: 'browser', short:'browser' }
         ], filter:validate.filterDevEnvInit}
     ])
 }
-exports.askForDevEnv = async (generator, extensionConfig) => {
-    extensionConfig.devEnv = {
+export const askForDevEnv = async (generator:Gen,extConf:ExtensionConfig) => {
+    extConf.devEnv = {
         typ: null,
         init: {}
     };
     
     if (generator.options['quick']) {
-        extensionConfig.devEnv = {
+        extConf.devEnv = {
             typ: 'runcli',
             init: {
                 browser: true
@@ -158,8 +165,8 @@ exports.askForDevEnv = async (generator, extensionConfig) => {
     );
     if (devEnv == null) return ;
     var Q;
-    if (devEnv == 'vscode') Q = await askForVSCode(generator, extensionConfig);
-    if (devEnv == 'runcli') Q = await askForRunCLI(generator, extensionConfig);
+    if (devEnv == 'vscode') Q = await askForVSCode(generator,extConf);
+    if (devEnv == 'runcli') Q = await askForRunCLI(generator,extConf);
 
     //shared prompts
     const {browserType} = await generator.prompt(
@@ -169,7 +176,7 @@ exports.askForDevEnv = async (generator, extensionConfig) => {
         ], when: Q.init['browser']
         }
     );
-    extensionConfig.devEnv = {
+    extConf.devEnv = {
         typ: devEnv,
         init: Q.init,
         browserType,
@@ -177,86 +184,86 @@ exports.askForDevEnv = async (generator, extensionConfig) => {
     };
 }
 
-exports.askForExpress = (generator, extensionConfig) => {
+export const askForExpress = (generator:Gen,extConf:ExtensionConfig) => {
     const express = generator.options['expressServer'];
     if (express != undefined) {
-        extensionConfig.expressServer = express;
+        extConf.expressServer = express;
         return Promise.resolve();
     }
     //if you selected to use the express server in devEnv, create the express server
-    if (extensionConfig.devEnv.serverType == 'express') {
-        extensionConfig.expressServer = true;
+    if (extConf.devEnv?.serverType == 'express') {
+        extConf.expressServer = true;
         return Promise.resolve();
     }
     //if you selected to use a different server in devEnv, don't ask this question
-    if (extensionConfig.devEnv.init['httpserver']) return Promise.resolve();
+    if (extConf.devEnv?.init!['httpserver']) return Promise.resolve();
 
     if (generator.options['quick']) {
-        extensionConfig.expressServer = true;
+        extConf.expressServer = true;
         return Promise.resolve();
     }
 
     return generator.prompt(
         { name: 'expressServer', message:'Create Node Express server?', type:'confirm' }
     ).then(Q => {
-        extensionConfig.expressServer = Q.expressServer;
+        extConf.expressServer = Q.expressServer;
     });
 }
 
-exports.askForPort = (generator, extensionConfig) => {
-    const when = validate.usesPort(extensionConfig);
+export const askForPort = (generator:Gen,extConf:ExtensionConfig) => {
+    const when = validate.usesPort(extConf);
     if (generator.options['quick'] && when) {
-        extensionConfig.devPort = '5010';
+        extConf.devPort = '5010';
         return Promise.resolve();
     }
     
     return generator.prompt(
         { name: 'devPort' , message: 'Dev Http port:', default: '5010', when }
     ).then(Q => {
-        extensionConfig.devPort = Q.devPort;
+        extConf.devPort = Q.devPort;
     });
 }
 
-exports.askForPkgManager = (generator, extensionConfig) => {
-    if (!validate.usesPkgManager(extensionConfig)) return Promise.resolve();
-    const choices = generator.packageManagerOptions;
+export const askForPkgManager = (generator:Gen,extConf:ExtensionConfig) => {
+    if (!validate.usesPkgManager(extConf)) return Promise.resolve();
+    const choices = packageManagers;
 
     const pmOption = generator.options.packageManager;
     if (pmOption && validate.isPackageManager(pmOption, choices)) {
-        extensionConfig.pkgManager = pmOption;
+        extConf.pkgManager = pmOption;
         return Promise.resolve();
     }
     if (generator.options['quick']) {
-        extensionConfig.pkgManager = 'npm';
+        extConf.pkgManager = 'npm';
         return Promise.resolve();
     }
     
     return generator.prompt(
         { name: 'pkgManager', message: 'What package manager to use?', type: 'list', choices}
     ).then(Q => {
-        extensionConfig.pkgManager = Q.pkgManager;
+        extConf.pkgManager = Q.pkgManager;
     });
 }
 
-exports.showClosingMessage = (log, extensionConfig) => {
-    const {devEnv} = extensionConfig;
-    if (devEnv.typ == 'vscode') {
-        if (devEnv.init.browser) log('Run browser test with: '+chalk.green('f5'));
-        const {httpserver, tsc} = devEnv.init;
+export const showClosingMessage = (generator:Gen, extConf:ExtensionConfig) => {
+    const {devEnv} = extConf;
+    if (devEnv?.typ == 'vscode') {
+        if (devEnv.init?.browser) generator.log('Run browser test with: '+chalk.green('f5'));
+        const {httpserver, tsc} = devEnv.init!;
         if (httpserver || tsc) {
-            log((tsc?'TypeScript Compiler':'')+
+            generator.log((tsc?'TypeScript Compiler':'')+
                 (httpserver&&tsc?' and ':'')+
                 (httpserver?'HTTP Server':'')+
                 ' will run on startup');
         }
-    } else if (devEnv.typ == 'runcli') {
-        if (devEnv.init.browser) log('Run browser test with: '+chalk.blue(extensionConfig.pkgManager+' run browser'));
-        if (extensionConfig.lang == 'ts') log('Run TypeScript Compiler with: '+chalk.blueBright('npx tsc --watch'));
-        if (extensionConfig.expressServer) log('Run HTTP Server with: '+chalk.blueBright('node server.js'));
+    } else if (devEnv?.typ == 'runcli') {
+        if (devEnv.init?.browser) generator.log('Run browser test with: '+chalk.blue(extConf.pkgManager+' run browser'));
+        if (extConf.lang == 'ts') generator.log('Run TypeScript Compiler with: '+chalk.blueBright('npx tsc --watch'));
+        if (extConf.expressServer) generator.log('Run HTTP Server with: '+chalk.blueBright('node server.js'));
     }
 }
 
-exports.askOpenWithCode = async (generator, extensionConfig) => {
+export const askOpenWithCode = async (generator:Gen,extConf:ExtensionConfig) => {
     if (generator.options['quick']) return ;
     const codeConcreate = await which('code').catch(() => undefined);
 

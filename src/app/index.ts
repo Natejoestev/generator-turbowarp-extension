@@ -1,11 +1,11 @@
-const Generator = require('yeoman-generator');
-const path = require('path');
-const chalk = require('chalk');
-const prompts = require('./prompts');
-const validate = require('./validate');
-//TODO migrate to typescript
+import Generator from 'yeoman-generator';;
+import * as path from 'path';
+import * as chalk from 'chalk';
+import * as prompts from './prompts';
+import * as validate from './validate';
+import {GeneratorOptions, ExtensionConfig} from './types';
 
-function camelCase(str) {
+function camelCase(str:string):string {
     // https://stackoverflow.com/a/2970667
     return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
         if (+match === 0) return "";
@@ -13,15 +13,12 @@ function camelCase(str) {
     });
 }
 
-module.exports = class extends Generator {
-    constructor(args, opts) {
-        super(args, opts);
-        this.description = 'Generates an extension for Turbowarp to start development.';
+export default class extends Generator<GeneratorOptions> {
+    extensionConfig:ExtensionConfig={};
 
-        this.packageManagerOptions = [
-            'npm'
-            //TODO add more package managers
-        ];
+    constructor(args:string|string[], options:GeneratorOptions) {
+        super(args, options);
+        this.description = 'Generates an extension for Turbowarp to start development.';
 
         this.option('quick', { type: Boolean, alias:'q', description: 'Quick mode, skip all optional prompts and use defaults' });
         this.option('lang', { type: String, alias:'l', description: 'Language, the programing language to use'});
@@ -54,14 +51,14 @@ module.exports = class extends Generator {
 
     configuring () {
         if (this.extensionConfig.newFolder) {
-            this.destinationRoot(path.resolve(this.destinationPath(), this.extensionConfig.extName));
+            this.destinationRoot(path.resolve(this.destinationPath(), this.extensionConfig.extName!));
         }
     }
 
     writing() {
         const {devEnv, devPort, lang} = this.extensionConfig;
-        if (devEnv.typ == 'vscode') {
-            if (devEnv.init['httpserver'] || devEnv.init['tsc']) {
+        if (devEnv?.typ == 'vscode') {
+            if (devEnv.init!['httpserver'] || devEnv.init!['tsc']) {
                 const content = this.fs.readJSON(this.templatePath('vscode', 'tasks.json'));
                 if (devEnv.serverType == 'py') {
                     content.tasks.push(
@@ -74,7 +71,7 @@ module.exports = class extends Generator {
                         this.templatePath('vscode', 'http-express-task.json')
                     ));
                 }
-                if (devEnv.init['tsc']) {
+                if (devEnv.init!['tsc']) {
                     content.tasks.push(
                         this.fs.readJSON(this.templatePath('vscode', 'tsc-task.json'))
                     );
@@ -84,7 +81,7 @@ module.exports = class extends Generator {
                     content
                 );
             }
-            if (devEnv.init['browser']) {
+            if (devEnv.init!['browser']) {
                 this.fs.copyTpl(
                     this.templatePath('vscode', 'browser-launch.json'),
                     this.destinationPath('.vscode', 'launch.json'),
@@ -106,12 +103,12 @@ module.exports = class extends Generator {
                     this.templatePath('package.json'),
                     pkgDest,
                     {...this.extensionConfig,
-                        extName:validate.formatExtForPackage(this.extensionConfig.extName)
+                        extName:validate.formatExtForPackage(this.extensionConfig.extName!)
                     }
                 );
             }
-            const scripts = {};
-            if (devEnv.typ == 'runcli' && devEnv.init['browser']) {
+            const scripts:{[_:string]:string} = {};
+            if (devEnv?.typ == 'runcli' && devEnv?.init!['browser']) {
                 scripts['browser'] = `${devEnv.browserType} https://turbowarp.org/editor?extension=http://localhost:${devPort}/extension.js`;
             }
             if (Object.keys(scripts).length!=0) {
@@ -120,7 +117,7 @@ module.exports = class extends Generator {
                 this.fs.writeJSON(pkgDest, pkg, undefined, '  ');
             }
         }
-        const className = camelCase(this.extensionConfig.extName);
+        const className = camelCase(this.extensionConfig.extName!);
         if (lang == 'js') {
             this.fs.copyTpl(
                 this.templatePath('js', 'extension.js'),
@@ -135,14 +132,14 @@ module.exports = class extends Generator {
             );
             this.fs.copyTpl(
                 this.templatePath('ts', 'main.ts'),
-                this.destinationPath(this.extensionConfig.srcPath, 'main.ts'),
+                this.destinationPath(this.extensionConfig.srcPath!, 'main.ts'),
                 Object.assign({className}, this.extensionConfig)
             );
         }
     }
 
     install() {
-        const packages = [];
+        const packages:string[] = [];
         if (this.extensionConfig.lang == 'ts') {
             packages.push('typescript', '@turbowarp/types');
         }
@@ -165,7 +162,7 @@ module.exports = class extends Generator {
 
     async end() {
         if (this.options['quick']) return ;
-        prompts.showClosingMessage(this.log, this.extensionConfig);
+        prompts.showClosingMessage(this, this.extensionConfig);
         await prompts.askOpenWithCode(this, this.extensionConfig);
     }
 };

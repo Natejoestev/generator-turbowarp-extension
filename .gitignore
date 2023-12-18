@@ -129,3 +129,6 @@ dist
 
 # testing
 test/
+
+# ts generator build
+generators/
